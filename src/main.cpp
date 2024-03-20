@@ -20,6 +20,13 @@ const unsigned int SCR_HEIGHT = 600;
 
 float mixer = 0.5f;
 
+//camera
+glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 5.0); //位置 
+glm::vec3 cameraFront = glm::vec3(0.0, 0.0, -1.0); //向前的向量
+glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0); //向上的向量
+float deltaTime = 0.0f; //每帧间隔时间
+float lastFrame = 0.0f; //上一帧的时间
+
 int main()
 {
     // glfw: initialize and configure
@@ -174,6 +181,9 @@ int main()
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        float currentTime = glfwGetTime();
+        deltaTime = currentTime - lastFrame;
+        lastFrame = currentTime;
         // input
         // -----
         processInput(window);
@@ -190,13 +200,15 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture2);
         firstShader.setFloat("mixer", mixer);
 
-        //变换
-        glm::mat4 proj = glm::perspective(glm::radians(50.0f), (float)width / (float)height, 0.1f, 100.0f);
+        //摄像机
         glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0, 0.0, -5.0));
-        firstShader.setMat4("proj", proj);
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         firstShader.setMat4("view", view);
 
+        //变换
+        glm::mat4 proj = glm::perspective(glm::radians(50.0f), (float)width / (float)height, 0.1f, 100.0f);
+        firstShader.setMat4("proj", proj);
+        
         //激活着色器
         firstShader.use();
         glBindVertexArray(VAO);
@@ -206,7 +218,6 @@ int main()
             model = glm::translate(model, cubePositions[i]);
             model = glm::rotate(model, (float)glfwGetTime() * glm::radians(20.0f * (i + 1)), glm::vec3(1.0f, 0.3f, 0.5f));
             firstShader.setMat4("model", model);
-
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
@@ -224,21 +235,46 @@ int main()
 
 void processInput(GLFWwindow* window)
 {
+    float cameraMoveSpeed = 3 * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
         mixer += 0.001f;
         if (mixer >= 1.0f)
             mixer = 1;
         std::cout << mixer << std::endl;
     }
-    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         mixer -= 0.001f;
         if (mixer <= 0)
             mixer = 0;
         std::cout << mixer << std::endl;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)//向上
+    {
+        cameraPos += cameraUp * cameraMoveSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)//向下
+    {
+        cameraPos -= cameraUp * cameraMoveSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)//向左
+    {
+        cameraPos += glm::normalize(glm::cross(cameraUp, cameraFront)) * cameraMoveSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)//向右
+    {
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraMoveSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)//向前
+    {
+        cameraPos += cameraFront * cameraMoveSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)//向后
+    {
+        cameraPos -= cameraFront * cameraMoveSpeed;
     }
 }
 
