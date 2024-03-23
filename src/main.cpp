@@ -11,7 +11,8 @@
 
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 
 // settings
@@ -26,6 +27,9 @@ glm::vec3 cameraFront = glm::vec3(0.0, 0.0, -1.0); //向前的向量
 glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0); //向上的向量
 float deltaTime = 0.0f; //每帧间隔时间
 float lastFrame = 0.0f; //上一帧的时间
+float lastX = 400, lastY = 300; //鼠标上一次所在的位置
+float yaw = -90.0f, pitch = 0.0f;
+bool firstMouse = true; //重新开始一次摄像机的视角移动
 
 int main()
 {
@@ -48,7 +52,9 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     //加载glad库
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -276,6 +282,41 @@ void processInput(GLFWwindow* window)
     {
         cameraPos -= cameraFront * cameraMoveSpeed;
     }
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) //按下鼠标左键才可以移动摄像头视角
+    {
+        firstMouse = true;
+        return;
+    }
+    if (firstMouse) //重新开始一次移动回调
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX, yoffset = lastY - ypos; //屏幕起点坐标在左上角
+    lastX = xpos, lastY = ypos;
+
+    float sensitivity = 0.05;
+    xoffset *= sensitivity, yoffset *= sensitivity;
+
+    yaw += xoffset, pitch += yoffset;
+
+    //限制下摄像机在y轴的角度，最多转180度。如果不限制可以转360度
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(front);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
