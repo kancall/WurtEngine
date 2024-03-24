@@ -1,18 +1,20 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "shader.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "camera.h"
 
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
 // settings
@@ -22,14 +24,12 @@ const unsigned int SCR_HEIGHT = 600;
 float mixer = 0.5f;
 
 //camera
-glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 5.0); //位置 
-glm::vec3 cameraFront = glm::vec3(0.0, 0.0, -1.0); //向前的向量
-glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0); //向上的向量
+Camera camera(glm::vec3(0.0, 0.0, 5.0));
+float lastX = 400, lastY = 300; //鼠标上一次所在的位置
+bool firstMouse = true; //重新开始一次摄像机的视角移动
+
 float deltaTime = 0.0f; //每帧间隔时间
 float lastFrame = 0.0f; //上一帧的时间
-float lastX = 400, lastY = 300; //鼠标上一次所在的位置
-float yaw = -90.0f, pitch = 0.0f;
-bool firstMouse = true; //重新开始一次摄像机的视角移动
 
 int main()
 {
@@ -53,6 +53,7 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     //加载glad库
@@ -207,12 +208,11 @@ int main()
         firstShader.setFloat("mixer", mixer);
 
         //摄像机
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 view = camera.GetViewMatrix();
         firstShader.setMat4("view", view);
 
         //变换
-        glm::mat4 proj = glm::perspective(glm::radians(50.0f), (float)width / (float)height, 0.1f, 100.0f);
+        glm::mat4 proj = glm::perspective(glm::radians(camera.Fov), (float)width / (float)height, 0.1f, 100.0f);
         firstShader.setMat4("proj", proj);
         
         //激活着色器
@@ -241,7 +241,6 @@ int main()
 
 void processInput(GLFWwindow* window)
 {
-    float cameraMoveSpeed = 3 * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
@@ -249,44 +248,42 @@ void processInput(GLFWwindow* window)
         mixer += 0.001f;
         if (mixer >= 1.0f)
             mixer = 1;
-        std::cout << mixer << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         mixer -= 0.001f;
         if (mixer <= 0)
             mixer = 0;
-        std::cout << mixer << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)//向上
     {
-        cameraPos += cameraUp * cameraMoveSpeed;
+        camera.ProcessKeyboard(UP, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)//向下
     {
-        cameraPos -= cameraUp * cameraMoveSpeed;
+        camera.ProcessKeyboard(DOWN, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)//向左
     {
-        cameraPos += glm::normalize(glm::cross(cameraUp, cameraFront)) * cameraMoveSpeed;
+        camera.ProcessKeyboard(LEFT, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)//向右
     {
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraMoveSpeed;
+        camera.ProcessKeyboard(RIGHT, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)//向前
     {
-        cameraPos += cameraFront * cameraMoveSpeed;
+        camera.ProcessKeyboard(FORWARD, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)//向后
     {
-        cameraPos -= cameraFront * cameraMoveSpeed;
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
     }
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) //按下鼠标左键才可以移动摄像头视角
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) //按下鼠标左键才可以移动摄像头视角
     {
         firstMouse = true;
         return;
@@ -301,22 +298,12 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     float xoffset = xpos - lastX, yoffset = lastY - ypos; //屏幕起点坐标在左上角
     lastX = xpos, lastY = ypos;
 
-    float sensitivity = 0.05;
-    xoffset *= sensitivity, yoffset *= sensitivity;
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
 
-    yaw += xoffset, pitch += yoffset;
-
-    //限制下摄像机在y轴的角度，最多转180度。如果不限制可以转360度
-    if (pitch > 89.0f)
-        pitch = 89.0f;
-    if (pitch < -89.0f)
-        pitch = -89.0f;
-
-    glm::vec3 front;
-    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front.y = sin(glm::radians(pitch));
-    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(front);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.ProcessMouseScroll(yoffset);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
