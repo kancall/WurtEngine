@@ -30,7 +30,7 @@ float deltaTime = 0.0f; //每帧间隔时间
 float lastFrame = 0.0f; //上一帧的时间
 
 //light
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+glm::vec3 lightPos(1.2f, 0.0f, 0.0f);
 
 int main()
 {
@@ -155,6 +155,7 @@ int main()
 
         glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
         glm::vec3 objectColor(1.0f, 0.5f, 0.31f);
+        objectShader.setVec3("viewPos", camera.Position);
         objectShader.setVec3("lightPos", lightPos);
         objectShader.setVec3("lightColor", lightColor);
         objectShader.setVec3("objectColor", objectColor);
