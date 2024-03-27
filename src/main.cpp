@@ -1,7 +1,12 @@
-#include <glad/glad.h>
+ï»¿#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#include "imgui.h"
+#define IMGUI_IMPL_OPENGL_LOADER_GLAD
+#include "backends/imgui_impl_glfw.cpp"
+#include "backends/imgui_impl_opengl2.cpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -23,11 +28,11 @@ const unsigned int SCR_HEIGHT = 600;
 
 //camera
 Camera camera(glm::vec3(1.0, 0.0, 6.0));
-float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2; //Êó±êÉÏÒ»´ÎËùÔÚµÄÎ»ÖÃ
-bool firstMouse = true; //ÖØĞÂ¿ªÊ¼Ò»´ÎÉãÏñ»úµÄÊÓ½ÇÒÆ¶¯
+float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2; //é¼ æ ‡ä¸Šä¸€æ¬¡æ‰€åœ¨çš„ä½ç½®
+bool firstMouse = true; //é‡æ–°å¼€å§‹ä¸€æ¬¡æ‘„åƒæœºçš„è§†è§’ç§»åŠ¨
 
-float deltaTime = 0.0f; //Ã¿Ö¡¼ä¸ôÊ±¼ä
-float lastFrame = 0.0f; //ÉÏÒ»Ö¡µÄÊ±¼ä
+float deltaTime = 0.0f; //æ¯å¸§é—´éš”æ—¶é—´
+float lastFrame = 0.0f; //ä¸Šä¸€å¸§çš„æ—¶é—´
 
 //light
 glm::vec3 lightPos(1.2f, 0.0f, 0.0f);
@@ -57,7 +62,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    //¼ÓÔØglad¿â
+    //åŠ è½½gladåº“
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -65,6 +70,16 @@ int main()
     }
 
     glEnable(GL_DEPTH_TEST);
+
+    //åŠ è½½imgui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext(); //åˆ›å»ºä¸Šä¸‹æ–‡
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // å…è®¸é”®ç›˜æ§åˆ¶
+
+    //// è®¾ç½®æ¸²æŸ“å™¨åç«¯
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL2_Init();
 
     Shader objectShader("src/myrenderVs.vs", "src/objectRenderFs.fs");
     Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
@@ -113,17 +128,17 @@ int main()
             -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
     unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);//¶¥µãÊı×é
-    glGenBuffers(1, &VBO); //¶¥µã»º³å
+    glGenVertexArrays(1, &VAO);//é¡¶ç‚¹æ•°ç»„
+    glGenBuffers(1, &VBO); //é¡¶ç‚¹ç¼“å†²
 
     glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); //°Ñ¶¥µãÊı×é¸´ÖÆµ½»º³åÖĞ
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //°ÑÊı¾İ´ÓcpuÌáÈ¡¡¢·ÅÈëÏÔ´æµÄVBOÖĞ
+    glBindBuffer(GL_ARRAY_BUFFER, VBO); //æŠŠé¡¶ç‚¹æ•°ç»„å¤åˆ¶åˆ°ç¼“å†²ä¸­
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //æŠŠæ•°æ®ä»cpuæå–ã€æ”¾å…¥æ˜¾å­˜çš„VBOä¸­
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);//¶¥µã
-    glEnableVertexAttribArray(0); //ÆôÓÃ¶¥µãÊôĞÔ
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));//¶¥µã
-    glEnableVertexAttribArray(1); //ÆôÓÃ¶¥µãÊôĞÔ
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);//é¡¶ç‚¹
+    glEnableVertexAttribArray(0); //å¯ç”¨é¡¶ç‚¹å±æ€§
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));//é¡¶ç‚¹
+    glEnableVertexAttribArray(1); //å¯ç”¨é¡¶ç‚¹å±æ€§
 
     unsigned int lightVAO;
     glGenVertexArrays(1, &lightVAO);
@@ -138,6 +153,7 @@ int main()
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        lightPos.y = sin(glfwGetTime());
         float currentTime = glfwGetTime();
         deltaTime = currentTime - lastFrame;
         lastFrame = currentTime;
@@ -182,13 +198,35 @@ int main()
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
+        glfwPollEvents();
+
+        ImGui_ImplOpenGL2_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        {
+            //å¼€å§‹ç»˜åˆ¶ImGui
+            ImGui::Begin("IBinary Windows");                          // Create a window called "Hello, world!" and append into it.
+            ImGui::Text("IBinary Blog");
+            //ImGui::SameLine();
+            ImGui::Indent(); //å¦èµ·ä¸€è¡Œåˆ¶è¡¨ç¬¦å¼€å§‹ç»˜åˆ¶Button
+            ImGui::Button("2222", ImVec2(100, 50));
+
+            ImGui::End();
+        }
+        ImGui::Render();
+        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
     }
 
     glDeleteVertexArrays(1, &VAO);
+    glDeleteVertexArrays(1, &lightVAO);
     glDeleteBuffers(1, &VBO);
+
+    ImGui_ImplOpenGL2_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
@@ -198,27 +236,27 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)//ÏòÉÏ
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)//å‘ä¸Š
     {
         camera.ProcessKeyboard(UP, deltaTime);
     }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)//ÏòÏÂ
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)//å‘ä¸‹
     {
         camera.ProcessKeyboard(DOWN, deltaTime);
     }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)//Ïò×ó
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)//å‘å·¦
     {
         camera.ProcessKeyboard(LEFT, deltaTime);
     }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)//ÏòÓÒ
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)//å‘å³
     {
         camera.ProcessKeyboard(RIGHT, deltaTime);
     }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)//ÏòÇ°
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)//å‘å‰
     {
         camera.ProcessKeyboard(FORWARD, deltaTime);
     }
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)//Ïòºó
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)//å‘å
     {
         camera.ProcessKeyboard(BACKWARD, deltaTime);
     }
@@ -226,19 +264,19 @@ void processInput(GLFWwindow* window)
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) //°´ÏÂÊó±ê×ó¼ü²Å¿ÉÒÔÒÆ¶¯ÉãÏñÍ·ÊÓ½Ç
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) //æŒ‰ä¸‹é¼ æ ‡å·¦é”®æ‰å¯ä»¥ç§»åŠ¨æ‘„åƒå¤´è§†è§’
     {
         firstMouse = true;
         return;
     }
-    if (firstMouse) //ÖØĞÂ¿ªÊ¼Ò»´ÎÒÆ¶¯»Øµ÷
+    if (firstMouse) //é‡æ–°å¼€å§‹ä¸€æ¬¡ç§»åŠ¨å›è°ƒ
     {
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
     }
 
-    float xoffset = xpos - lastX, yoffset = lastY - ypos; //ÆÁÄ»Æğµã×ø±êÔÚ×óÉÏ½Ç
+    float xoffset = xpos - lastX, yoffset = lastY - ypos; //å±å¹•èµ·ç‚¹åæ ‡åœ¨å·¦ä¸Šè§’
     lastX = xpos, lastY = ypos;
 
     camera.ProcessMouseMovement(xoffset, yoffset);
