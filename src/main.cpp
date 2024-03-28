@@ -1,12 +1,12 @@
 ﻿#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <GLFW/glfw3.h> //貌似没用到
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "imgui.h"
 #define IMGUI_IMPL_OPENGL_LOADER_GLAD
 #include "backends/imgui_impl_glfw.cpp"
-#include "backends/imgui_impl_opengl2.cpp"
+#include "backends/imgui_impl_opengl3.cpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -21,6 +21,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+void renderUI();
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -56,12 +57,15 @@ int main()
         glfwTerminate();
         return -1;
     }
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(window); 
+    glfwSwapInterval(1);
+    gladLoadGL();
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //GLFW_CURSOR_DISABLED是不显示鼠标
     //加载glad库
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -69,17 +73,18 @@ int main()
         return -1;
     }
 
-    glEnable(GL_DEPTH_TEST);
-
     //加载imgui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext(); //创建上下文
+    ImGui::StyleColorsDark();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 允许键盘控制
-
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
     //// 设置渲染器后端
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL2_Init();
+    ImGui_ImplOpenGL3_Init();
+
+    glEnable(GL_DEPTH_TEST);
 
     Shader objectShader("src/myrenderVs.vs", "src/objectRenderFs.fs");
     Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
@@ -153,18 +158,21 @@ int main()
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        lightPos.y = sin(glfwGetTime());
-        float currentTime = glfwGetTime();
-        deltaTime = currentTime - lastFrame;
-        lastFrame = currentTime;
         // input
         // -----
         processInput(window);
 
-        // render
-        // ------
+        // 清空缓存
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        renderUI();
+
+        //开始渲染
+        lightPos.y = sin(glfwGetTime());
+        float currentTime = glfwGetTime();
+        deltaTime = currentTime - lastFrame;
+        lastFrame = currentTime;
 
         //objectRender
         objectShader.use();
@@ -198,38 +206,42 @@ int main()
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        glfwPollEvents();
 
-        ImGui_ImplOpenGL2_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        {
-            //开始绘制ImGui
-            ImGui::Begin("IBinary Windows");                          // Create a window called "Hello, world!" and append into it.
-            ImGui::Text("IBinary Blog");
-            //ImGui::SameLine();
-            ImGui::Indent(); //另起一行制表符开始绘制Button
-            ImGui::Button("2222", ImVec2(100, 50));
-
-            ImGui::End();
-        }
-        ImGui::Render();
-        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-
+        
         glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteVertexArrays(1, &lightVAO);
     glDeleteBuffers(1, &VBO);
 
-    ImGui_ImplOpenGL2_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
+}
+
+void renderUI()
+{
+    //ui绘制
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    {
+        //开始绘制ImGui
+        ImGui::Begin("Wurt");                        
+        ImGui::Text("hello");
+        ImGui::SameLine();
+        ImGui::Indent(); //另起一行制表符开始绘制Button
+        ImGui::Button("2222", ImVec2(100, 50));
+
+        ImGui::End();
+    }
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void processInput(GLFWwindow* window)
