@@ -1,5 +1,5 @@
 ﻿#include <glad/glad.h>
-#include <GLFW/glfw3.h> //貌似没用到
+#include <GLFW/glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -37,6 +37,9 @@ float lastFrame = 0.0f; //上一帧的时间
 
 //light
 glm::vec3 lightPos(1.2f, 0.0f, 0.0f);
+
+//phong
+int specuMi = 64;
 
 int main()
 {
@@ -170,19 +173,26 @@ int main()
 
         //开始渲染
         lightPos.y = sin(glfwGetTime());
+
         float currentTime = glfwGetTime();
         deltaTime = currentTime - lastFrame;
         lastFrame = currentTime;
 
         //objectRender
         objectShader.use();
+        objectShader.setVec3("material.ambient", glm::vec3(0.0f, 0.1f, 0.06f));
+        objectShader.setVec3("material.diffuse", glm::vec3(0.0f, 0.50980392f, 0.50980392f));
+        objectShader.setVec3("material.specular", glm::vec3(0.50196078f));
+        objectShader.setFloat("material.shininess", specuMi);
 
-        glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+        objectShader.setVec3("light.ambient", glm::vec3(1.0));
+        objectShader.setVec3("light.diffuse", glm::vec3(1.0));
+        objectShader.setVec3("light.specular", glm::vec3(1.0));
+        objectShader.setVec3("light.position", lightPos);
+
         glm::vec3 objectColor(1.0f, 0.5f, 0.31f);
-        objectShader.setVec3("viewPos", camera.Position);
-        objectShader.setVec3("lightPos", lightPos);
-        objectShader.setVec3("lightColor", lightColor);
         objectShader.setVec3("objectColor", objectColor);
+        objectShader.setVec3("viewPos", camera.Position);
 
         glm::mat4 view = camera.GetViewMatrix();
         objectShader.setMat4("view", view);
@@ -197,6 +207,7 @@ int main()
         //lightingRender
         lightShader.use();
 
+        lightShader.setVec3("lightColor", glm::vec3(1.0));
         lightShader.setMat4("view", view);
         lightShader.setMat4("proj", proj);
         model = glm::mat4(1.0f);
@@ -206,8 +217,6 @@ int main()
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-
-        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -234,9 +243,8 @@ void renderUI()
         //开始绘制ImGui
         ImGui::Begin("Wurt");                        
         ImGui::Text("hello");
-        ImGui::SameLine();
         ImGui::Indent(); //另起一行制表符开始绘制Button
-        ImGui::Button("2222", ImVec2(100, 50));
+        ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
 
         ImGui::End();
     }
