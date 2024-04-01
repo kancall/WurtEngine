@@ -38,6 +38,9 @@ float lastFrame = 0.0f; //上一帧的时间
 
 //light
 glm::vec3 lightPos(1.2f, 0.0f, 0.0f);
+glm::vec3 ambientColor(1.0f);
+glm::vec3 diffuseColor(1.0f);
+glm::vec3 specularColor(1.0f);
 
 //phong
 int specuMi = 64;
@@ -166,8 +169,10 @@ int main()
     objectShader.use();
     objectShader.setInt("material.diffuse", 0);
     objectShader.setInt("material.specular", 1);
+    objectShader.setInt("material.emission", 2);
     unsigned int diffuseMap = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//container2.png");
-    unsigned int specularMap = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//container2_specular.png");
+    unsigned int specularMap = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//lighting_maps_specular_color.png");
+    unsigned int emissionMap = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//matrix.jpg");
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // render loop
@@ -195,9 +200,9 @@ int main()
         objectShader.use();
         objectShader.setFloat("material.shininess", specuMi);
 
-        objectShader.setVec3("light.ambient", glm::vec3(1.0));
-        objectShader.setVec3("light.diffuse", glm::vec3(1.0));
-        objectShader.setVec3("light.specular", glm::vec3(1.0));
+        objectShader.setVec3("light.ambient", ambientColor);
+        objectShader.setVec3("light.diffuse", diffuseColor);
+        objectShader.setVec3("light.specular", specularColor);
         objectShader.setVec3("light.position", lightPos);
 
         glm::vec3 objectColor(1.0f, 1.0f, 1.0f);
@@ -215,6 +220,8 @@ int main()
         glBindTexture(GL_TEXTURE_2D, diffuseMap);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, emissionMap);
 
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -260,6 +267,9 @@ void renderUI()
         ImGui::Text("hello");
         ImGui::Indent();
         ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
+        ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);
 
         ImGui::End();
     }

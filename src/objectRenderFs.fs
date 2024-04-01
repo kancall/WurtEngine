@@ -11,6 +11,7 @@ struct Material
     //材质对不同反射的表现颜色
     sampler2D diffuse;
     sampler2D specular;
+    sampler2D emission;
     //高光反射的幂
     float shininess;
 };
@@ -45,6 +46,8 @@ void main()
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     vec3 specular = light.specular * spec * texture(material.specular, Texcoord).rgb;
 
-    vec3 res = (ambient + diffuse + specular) * objectColor;
+    vec3 emission = texture(material.emission, Texcoord).rgb;
+
+    vec3 res = (ambient + diffuse + specular + emission) * objectColor;
     FragColor = vec4(res, 1.0f);
 }
