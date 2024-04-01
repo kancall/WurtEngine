@@ -190,7 +190,6 @@ int main()
         renderUI();
 
         //开始渲染
-        lightPos.y = sin(glfwGetTime());
 
         float currentTime = glfwGetTime();
         deltaTime = currentTime - lastFrame;
@@ -270,6 +269,7 @@ void renderUI()
         ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("lightPosition", &lightPos.x, -10.0f, 10.0f);
 
         ImGui::End();
     }
