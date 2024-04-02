@@ -37,9 +37,11 @@ float deltaTime = 0.0f; //每帧间隔时间
 float lastFrame = 0.0f; //上一帧的时间
 
 //light
-glm::vec3 lightPos(1.2f, 0.0f, 0.0f); //光源的位置
+glm::vec3 dirLightPos(1.0, 1.0, 1.0);
+glm::vec3 spotLightPos(1.2f, 0.0f, 0.0f); //聚光灯的位置
+glm::vec3 pointLightPos(0.7f, 0.2f, 2.0f); //点光源的位置
 glm::vec3 lightDir(0.0f, 0.0f, -1.0f); //光源的方向
-glm::vec3 ambientColor(1.0f);
+glm::vec3 ambientColor(-0.2f);
 glm::vec3 diffuseColor(1.0f);
 glm::vec3 specularColor(1.0f);
 
@@ -209,22 +211,32 @@ int main()
 
         //objectRender
         objectShader.use();
+        //material
         objectShader.setFloat("material.shininess", specuMi);
-
-        objectShader.setVec3("light.ambient", ambientColor);
-        objectShader.setVec3("light.diffuse", diffuseColor);
-        objectShader.setVec3("light.specular", specularColor);
-        //objectShader.setVec3("light.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
-        //objectShader.setVec3("light.position", lightPos);
-        //点光源的参数
-        objectShader.setFloat("light.constant", 1.0f);
-        objectShader.setFloat("light.linear", 0.09f);
-        objectShader.setFloat("light.quadratic", 0.032f);
-        //聚光灯的参数
-        objectShader.setVec3("light.position", lightPos);
-        objectShader.setVec3("light.direction", lightDir);
-        objectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
-        objectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+        //dirLight
+        objectShader.setVec3("dirLight.ambient", ambientColor);
+        objectShader.setVec3("dirLight.diffuse", diffuseColor);
+        objectShader.setVec3("dirLight.specular", specularColor);
+        objectShader.setVec3("dirLight.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
+        //pointLight
+        objectShader.setVec3("pointLight.position", pointLightPos);
+        objectShader.setVec3("pointLight.ambient", glm::vec3(0.05f, 0.05f, 0.05f));
+        objectShader.setVec3("pointLight.diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+        objectShader.setVec3("pointLight.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+        objectShader.setFloat("pointLight.constant", 1.0f);
+        objectShader.setFloat("pointLight.linear", 0.09f);
+        objectShader.setFloat("pointLight.quadratic", 0.032f);
+        //spotLight
+        objectShader.setVec3("spotLight.position", spotLightPos);
+        objectShader.setVec3("spotLight.direction", lightDir);
+        objectShader.setVec3("spotLight.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
+        objectShader.setVec3("spotLight.diffuse", glm::vec3(1.0f, 1.0f, 1.0f));
+        objectShader.setVec3("spotLight.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+        objectShader.setFloat("spotLight.constant", 1.0f);
+        objectShader.setFloat("spotLight.linear", 0.09f);
+        objectShader.setFloat("spotLight.quadratic", 0.032f);
+        objectShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+        objectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
         glm::vec3 objectColor(1.0f, 1.0f, 1.0f);
         objectShader.setVec3("objectColor", objectColor);
@@ -262,11 +274,30 @@ int main()
         lightShader.setVec3("lightColor", glm::vec3(1.0));
         lightShader.setMat4("view", view);
         lightShader.setMat4("proj", proj);
-        glm::mat4 model = glm::mat4(1.0f);
+        /*glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, lightPos);
         model = glm::scale(model, glm::vec3(0.2f));
-        lightShader.setMat4("model", model);
+        lightShader.setMat4("model", model);*/
+
         glBindVertexArray(lightVAO);
+
+        //dirLight
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, dirLightPos);
+        model = glm::scale(model, glm::vec3(0.2f));
+        lightShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        //pointLight
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, pointLightPos);
+        model = glm::scale(model, glm::vec3(0.2f));
+        lightShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        //spotLight
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, spotLightPos);
+        model = glm::scale(model, glm::vec3(0.2f));
+        lightShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
@@ -300,7 +331,9 @@ void renderUI()
         ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);
-        ImGui::SliderFloat3("lightPosition", &lightPos.x, -10.0f, 10.0f);
+        ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
+        ImGui::SliderFloat3("dirLightPos", &dirLightPos.x, -10.0f, 10.0f);
+        ImGui::SliderFloat3("pointLightPos", &pointLightPos.x, -10.0f, 10.0f);
 
         ImGui::End();
     }
