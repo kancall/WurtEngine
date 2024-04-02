@@ -24,7 +24,6 @@ struct DirLight
     vec3 diffuse;
     vec3 specular;
 };
-uniform DirLight dirLight;
 //点光源
 struct PointLight
 {
@@ -38,7 +37,6 @@ struct PointLight
     vec3 diffuse;
     vec3 specular;
 };
-uniform PointLight pointLight;
 //聚光灯
 struct SpotLight
 {
@@ -56,6 +54,10 @@ struct SpotLight
     vec3 diffuse;
     vec3 specular;   
 };
+uniform int pointLightCount; //点光源个数
+
+uniform DirLight dirLight;
+uniform PointLight pointLights[10]; //设置点光源数组，要设置成固定大小，因为glsl没有动态数组
 uniform SpotLight spotLight;
 
 uniform Material material;
@@ -73,7 +75,8 @@ void main()
     vec3 viewDir = normalize(viewPos - FragPos);
 
     vec3 res = getDirLight(dirLight, norm, viewDir);
-    res += getPointLight(pointLight, norm, FragPos, viewDir);  
+    for(int i = 0; i < pointLightCount; i++)
+        res += getPointLight(pointLights[i], norm, FragPos, viewDir);  
     res += getSpotLight(spotLight, norm, FragPos, viewDir);   
 
     

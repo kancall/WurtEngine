@@ -16,6 +16,8 @@
 #include "camera.h"
 
 #include <iostream>
+#include <string>
+using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -37,10 +39,15 @@ float deltaTime = 0.0f; //每帧间隔时间
 float lastFrame = 0.0f; //上一帧的时间
 
 //light
-glm::vec3 dirLightPos(1.0, 1.0, 1.0);
+int pointLightCount = 1;
+glm::vec3 dirLightPos(1.0, 1.0, 1.0); //平行光的光源位置
+
 glm::vec3 spotLightPos(1.2f, 0.0f, 0.0f); //聚光灯的位置
-glm::vec3 pointLightPos(0.7f, 0.2f, 2.0f); //点光源的位置
-glm::vec3 lightDir(0.0f, 0.0f, -1.0f); //光源的方向
+glm::vec3 spotLightDir(0.0f, 0.0f, -1.0f); //聚光灯的方向
+
+glm::vec3 pointLightPos[10]; //点光源的位置
+glm::vec3 pointLightAmbient[10];
+
 glm::vec3 ambientColor(-0.2f);
 glm::vec3 diffuseColor(1.0f);
 glm::vec3 specularColor(1.0f);
@@ -157,6 +164,9 @@ int main()
     glm::vec3(1.5f,  0.2f, -1.5f),
     glm::vec3(-1.3f,  1.0f, -1.5f)
     };
+    for (int i = 0; i < 10; i++)
+        pointLightAmbient[i] = glm::vec3(1.0f);
+
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);//顶点数组
@@ -219,16 +229,22 @@ int main()
         objectShader.setVec3("dirLight.specular", specularColor);
         objectShader.setVec3("dirLight.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
         //pointLight
-        objectShader.setVec3("pointLight.position", pointLightPos);
-        objectShader.setVec3("pointLight.ambient", glm::vec3(0.05f, 0.05f, 0.05f));
-        objectShader.setVec3("pointLight.diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
-        objectShader.setVec3("pointLight.specular", glm::vec3(1.0f, 1.0f, 1.0f));
-        objectShader.setFloat("pointLight.constant", 1.0f);
-        objectShader.setFloat("pointLight.linear", 0.09f);
-        objectShader.setFloat("pointLight.quadratic", 0.032f);
+        objectShader.setInt("pointLightCount", pointLightCount);
+        for (int i = 0; i < pointLightCount; i++)
+        {
+            string index = "[" + to_string(i) + "]";
+            objectShader.setVec3("pointLights" + index + ".position", pointLightPos[i]);
+            objectShader.setVec3("pointLights" + index + ".ambient", pointLightAmbient[i]);
+            objectShader.setVec3("pointLights" + index + ".diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+            objectShader.setVec3("pointLights" + index + ".specular", glm::vec3(1.0f, 1.0f, 1.0f));
+            objectShader.setFloat("pointLights" + index + ".constant", 1.0f);
+            objectShader.setFloat("pointLights" + index + ".linear", 0.09f);
+            objectShader.setFloat("pointLights" + index + ".quadratic", 0.032f);
+
+        }
         //spotLight
         objectShader.setVec3("spotLight.position", spotLightPos);
-        objectShader.setVec3("spotLight.direction", lightDir);
+        objectShader.setVec3("spotLight.direction", spotLightDir);
         objectShader.setVec3("spotLight.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
         objectShader.setVec3("spotLight.diffuse", glm::vec3(1.0f, 1.0f, 1.0f));
         objectShader.setVec3("spotLight.specular", glm::vec3(1.0f, 1.0f, 1.0f));
@@ -271,7 +287,6 @@ int main()
         //lightingRender
         lightShader.use();
 
-        lightShader.setVec3("lightColor", glm::vec3(1.0));
         lightShader.setMat4("view", view);
         lightShader.setMat4("proj", proj);
         /*glm::mat4 model = glm::mat4(1.0f);
@@ -286,18 +301,24 @@ int main()
         model = glm::translate(model, dirLightPos);
         model = glm::scale(model, glm::vec3(0.2f));
         lightShader.setMat4("model", model);
+        lightShader.setVec3("lightColor", glm::vec3(1.0));
         glDrawArrays(GL_TRIANGLES, 0, 36);
         //pointLight
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, pointLightPos);
-        model = glm::scale(model, glm::vec3(0.2f));
-        lightShader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for (int i = 0; i < pointLightCount; i++)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, pointLightPos[i]);
+            model = glm::scale(model, glm::vec3(0.2f));
+            lightShader.setMat4("model", model);
+            lightShader.setVec3("lightColor", pointLightAmbient[i]);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
         //spotLight
         model = glm::mat4(1.0f);
         model = glm::translate(model, spotLightPos);
         model = glm::scale(model, glm::vec3(0.2f));
         lightShader.setMat4("model", model);
+        lightShader.setVec3("lightColor", glm::vec3(1.0));
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
@@ -324,16 +345,26 @@ void renderUI()
     ImGui::NewFrame();
     {
         //开始绘制ImGui
-        ImGui::Begin("Wurt");                        
-        ImGui::Text("hello");
+        ImGui::Begin("WurtEngine"); 
         ImGui::Indent();
         ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
         ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);
-        ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
+
         ImGui::SliderFloat3("dirLightPos", &dirLightPos.x, -10.0f, 10.0f);
-        ImGui::SliderFloat3("pointLightPos", &pointLightPos.x, -10.0f, 10.0f);
+
+        ImGui::InputInt("pointLightCount", &pointLightCount);
+        for (int i = 0; i < pointLightCount; i++)
+        {
+            string temp1 = "pointLightPos[" + to_string(i) + "]";
+            ImGui::SliderFloat3(temp1.c_str(), &pointLightPos[i].x, -10.0f, 10.0f);
+            string temp2 = "pointLightAmbient[" + to_string(i) + "]";
+            ImGui::SliderFloat3(temp2.c_str(), &pointLightAmbient[i].x, 0.0f, 1.0f);
+        }
+
+        ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
+        ImGui::SliderFloat3("spotLightDir", &spotLightDir.x, -1.0f, 1.0f);
 
         ImGui::End();
     }
