@@ -37,7 +37,8 @@ float deltaTime = 0.0f; //每帧间隔时间
 float lastFrame = 0.0f; //上一帧的时间
 
 //light
-glm::vec3 lightPos(1.2f, 0.0f, 0.0f);
+glm::vec3 lightPos(1.2f, 0.0f, 0.0f); //光源的位置
+glm::vec3 lightDir(0.0f, 0.0f, -1.0f); //光源的方向
 glm::vec3 ambientColor(1.0f);
 glm::vec3 diffuseColor(1.0f);
 glm::vec3 specularColor(1.0f);
@@ -142,7 +143,18 @@ int main()
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
-
+    glm::vec3 cubePositions[] = {
+    glm::vec3(0.0f,  0.0f,  0.0f),
+    glm::vec3(2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3(2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3(1.3f, -2.0f, -2.5f),
+    glm::vec3(1.5f,  2.0f, -2.5f),
+    glm::vec3(1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);//顶点数组
@@ -179,6 +191,10 @@ int main()
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        float currentTime = glfwGetTime();
+        deltaTime = currentTime - lastFrame;
+        lastFrame = currentTime;
+
         // input
         // -----
         processInput(window);
@@ -191,10 +207,6 @@ int main()
 
         //开始渲染
 
-        float currentTime = glfwGetTime();
-        deltaTime = currentTime - lastFrame;
-        lastFrame = currentTime;
-
         //objectRender
         objectShader.use();
         objectShader.setFloat("material.shininess", specuMi);
@@ -202,7 +214,17 @@ int main()
         objectShader.setVec3("light.ambient", ambientColor);
         objectShader.setVec3("light.diffuse", diffuseColor);
         objectShader.setVec3("light.specular", specularColor);
+        //objectShader.setVec3("light.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
+        //objectShader.setVec3("light.position", lightPos);
+        //点光源的参数
+        objectShader.setFloat("light.constant", 1.0f);
+        objectShader.setFloat("light.linear", 0.09f);
+        objectShader.setFloat("light.quadratic", 0.032f);
+        //聚光灯的参数
         objectShader.setVec3("light.position", lightPos);
+        objectShader.setVec3("light.direction", lightDir);
+        objectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+        objectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 
         glm::vec3 objectColor(1.0f, 1.0f, 1.0f);
         objectShader.setVec3("objectColor", objectColor);
@@ -212,8 +234,8 @@ int main()
         objectShader.setMat4("view", view);
         glm::mat4 proj = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         objectShader.setMat4("proj", proj);
-        glm::mat4 model = glm::mat4(1.0f);
-        objectShader.setMat4("model", model);
+        /*glm::mat4 model = glm::mat4(1.0f);
+        objectShader.setMat4("model", model);*/
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, diffuseMap);
@@ -223,7 +245,16 @@ int main()
         glBindTexture(GL_TEXTURE_2D, emissionMap);
 
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for (int i = 0; i < 10; i++)
+        {
+            glm::mat4 model(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            objectShader.setMat4("model", model);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         //lightingRender
         lightShader.use();
@@ -231,7 +262,7 @@ int main()
         lightShader.setVec3("lightColor", glm::vec3(1.0));
         lightShader.setMat4("view", view);
         lightShader.setMat4("proj", proj);
-        model = glm::mat4(1.0f);
+        glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, lightPos);
         model = glm::scale(model, glm::vec3(0.2f));
         lightShader.setMat4("model", model);

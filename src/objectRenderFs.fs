@@ -18,11 +18,21 @@ struct Material
 //设置光源的属性
 struct Light
 {
-    vec3 position;
+    vec3 direction; //光源方向
+    vec3 position; //点光源的光源位置
+
     //光源对不同反射类型的强度
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    //点光源
+    float constant; //点光源的常数项
+    float linear; //点光源的一次项
+    float quadratic; //点光源的二次项
+    //聚光灯
+    float cutOff; //切光角
+    float outerCutOff;
 };
 
 uniform Material material;
@@ -35,6 +45,7 @@ void main()
 {
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(light.position - FragPos);
+    //vec3 lightDir = normalize(-light.direction);
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
 
@@ -48,6 +59,24 @@ void main()
 
     vec3 emission = texture(material.emission, Texcoord).rgb;
 
-    vec3 res = (ambient + diffuse + specular + emission) * objectColor;
+    //float distance = length(light.position - FragPos);
+    //float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * distance * distance);
+
+    //ambient  *= attenuation; 
+    //diffuse  *= attenuation;
+    //specular *= attenuation;
+    float theta = dot(lightDir, normalize(-light.direction));
+    float epsilon = light.cutOff - light.outerCutOff;
+    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);  
+    diffuse *= intensity;
+    specular *= intensity;
+
+    float distance    = length(light.position - FragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+    ambient  *= attenuation; 
+    diffuse   *= attenuation;
+    specular *= attenuation;   
+
+    vec3 res = (ambient + diffuse + specular) * objectColor;
     FragColor = vec4(res, 1.0f);
 }
