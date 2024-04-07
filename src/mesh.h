@@ -71,7 +71,7 @@ public:
 		glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0); //绘制
 		glBindVertexArray(0);
 
-		glActiveTexture(GL_TEXTURE0);
+		//glActiveTexture(GL_TEXTURE0);
 	}
 private:
 	//顶点数据

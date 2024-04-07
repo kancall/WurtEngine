@@ -1,4 +1,8 @@
-﻿#include <glad/glad.h>
+﻿#ifndef STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#endif // !STB_IMAGE_IMPLEMENTATION
+
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "imgui.h"
@@ -104,7 +108,9 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     Shader objectShader("src/modelLoad.vs", "src/modelLoad.fs");
-    Model myModel("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
+    Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
+    Model myModel("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
+    Model backpack("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
     
     // render loop
     // -----------
@@ -123,7 +129,21 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         objectShader.use();
+        objectShader.setVec3("viewPos", camera.Position);
 
+        //lights
+        objectShader.setInt("pointLightCount", pointLightCount);
+        objectShader.setFloat("material.shininess", specuMi);
+
+        objectShader.setVec3("pointLights[0].position", pointLightPos[0]);
+        objectShader.setFloat("pointLights[0].constant", 1.0f);
+        objectShader.setFloat("pointLights[0].linear", 0.09f);
+        objectShader.setFloat("pointLights[0].quadratic", 0.032f);
+        objectShader.setVec3("pointLights[0].ambient", pointLightAmbient[0]);
+        objectShader.setVec3("pointLights[0].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+        objectShader.setVec3("pointLights[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
+
+        //矩阵们
         glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
         objectShader.setMat4("projection", projection);
@@ -132,7 +152,17 @@ int main()
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); 
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	
         objectShader.setMat4("model", model);
-        myModel.Draw(objectShader);
+        backpack.Draw(objectShader);
+
+        lightShader.use();
+        lightShader.setVec3("lightColor", pointLightAmbient[0]);
+        lightShader.setMat4("proj", projection);
+        lightShader.setMat4("view", view);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, pointLightPos[0]);
+        model = glm::scale(model, glm::vec3(0.2f));
+        lightShader.setMat4("model", model);
+        myModel.Draw(lightShader);
 
         //渲染ui
         renderUI();
@@ -161,11 +191,11 @@ void renderUI()
         ImGui::Begin("WurtEngine"); 
         ImGui::Indent();
         ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
-        ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
+        /*ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
-        ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);*/
 
-        ImGui::SliderFloat3("dirLightPos", &dirLightPos.x, -10.0f, 10.0f);
+        //ImGui::SliderFloat3("dirLightPos", &dirLightPos.x, -10.0f, 10.0f);
 
         ImGui::InputInt("pointLightCount", &pointLightCount);
         for (int i = 0; i < pointLightCount; i++)
@@ -176,8 +206,8 @@ void renderUI()
             ImGui::SliderFloat3(temp2.c_str(), &pointLightAmbient[i].x, 0.0f, 1.0f);
         }
 
-        ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
-        ImGui::SliderFloat3("spotLightDir", &spotLightDir.x, -1.0f, 1.0f);
+        /*ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
+        ImGui::SliderFloat3("spotLightDir", &spotLightDir.x, -1.0f, 1.0f);*/
 
         ImGui::End();
     }
@@ -244,4 +274,3 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
-

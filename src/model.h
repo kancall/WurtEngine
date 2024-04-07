@@ -9,7 +9,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-//#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "shader.h"
@@ -117,6 +116,16 @@ private:
 			textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 			vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+
+			//如果没有贴图，添加一个默认的diffuse贴图
+			if (textures.size() <= 0)
+			{
+				Texture texture;
+				texture.id = TextureFromFile("/texture.jpg", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
+				texture.type = "texture_diffuse";
+				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//texture.jpg";
+				textures.push_back(texture);
+			}
 		}
 
 		return Mesh(vertices, indices, textures);
