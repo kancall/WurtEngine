@@ -20,7 +20,9 @@
 
 #include <iostream>
 #include <string>
-
+#include <fstream>
+#include <filesystem>
+namespace fs = std::filesystem;
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
@@ -57,6 +59,10 @@ glm::vec3 specularColor(1.0f);
 
 //phong
 int specuMi = 64;
+
+//ui
+const char* fileId = "MyContentFileId";
+int fileIdCount = 0;
 
 int main()
 {
@@ -180,6 +186,71 @@ int main()
     return 0;
 }
 
+//判断文件的后缀是不是.obj
+bool isObjFile(const string& file)
+{
+    int dotPos = file.rfind('.'); //寻找最后一个.的位置
+    if (dotPos != string::npos && dotPos != 0)
+    {
+        if (file.substr(dotPos + 1) == "obj")
+            return true;
+    }
+    return false;
+}
+
+//在ui中创建指定文件夹的结构
+void buildFileTree(const fs::path& path)
+{
+    if (!fs::exists(path))
+    {
+        ImGui::Text("error! not exist %s", path);
+        return;
+    }
+
+    for (const auto& file : fs::directory_iterator(path))
+    {
+        if (file.is_directory()) //是文件夹
+        {
+            
+            if (ImGui::TreeNodeEx((fileId + fileIdCount++), ImGuiTreeNodeFlags_None, file.path().filename().string().c_str()))
+            {
+                buildFileTree(file.path());
+                ImGui::TreePop();
+            }
+        }
+        else
+        {
+            if (isObjFile(file.path().string())) //obj文件。可以点击，点击后会在场景原点创建一个
+            {
+                if (ImGui::Button(file.path().filename().string().c_str()))
+                {
+                    cout << "init obj" << endl; //创建该模型
+                }
+            }
+            else
+            {
+                ImGui::Text(file.path().filename().string().c_str());
+            }
+        }
+    }
+}
+
+//资源界面
+void showFileContentWindow()
+{
+    fs::path path = "E://vs c++ practice//WurtEngine//WurtEngine//res";
+    fileIdCount = 0;
+
+    ImGui::Begin("File Content"); 
+    ImGui::SetWindowFontScale(1.5f); //窗口字体放大
+    if (ImGui::TreeNode("assets"))
+    {
+        buildFileTree(path);
+        ImGui::TreePop();
+    }
+    ImGui::End();
+}
+
 void renderUI()
 {
     //ui绘制
@@ -205,11 +276,12 @@ void renderUI()
             string temp2 = "pointLightAmbient[" + to_string(i) + "]";
             ImGui::SliderFloat3(temp2.c_str(), &pointLightAmbient[i].x, 0.0f, 1.0f);
         }
-
         /*ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
         ImGui::SliderFloat3("spotLightDir", &spotLightDir.x, -1.0f, 1.0f);*/
-
+        
         ImGui::End();
+
+        showFileContentWindow();
     }
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
