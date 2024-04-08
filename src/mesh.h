@@ -11,8 +11,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 //存储向量
 struct Vertex
 {
@@ -24,21 +22,21 @@ struct Vertex
 struct Texture
 {
 	unsigned int id; //纹理图 在opengl中对应的缓冲区id
-	string type; //纹理类型，格式为texture_xxx
-	string path;
+	std::string type; //纹理类型，格式为texture_xxx
+	std::string path;
 };
 //网格
 class Mesh
 {
 public:
 	//网格数据
-	vector<Vertex> vertices; //顶点
-	vector<unsigned int> indices; //网格索引
-	vector<Texture> textures; //纹理
+	std::vector<Vertex> vertices; //顶点
+	std::vector<unsigned int> indices; //网格索引
+	std::vector<Texture> textures; //纹理
 	unsigned int VAO;
 
 	//初始化网格数据
-	Mesh(vector<Vertex>& vertices, vector<unsigned int>& indices, vector<Texture>& textures)
+	Mesh(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, std::vector<Texture>& textures)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
@@ -55,8 +53,8 @@ public:
 		{
 			glActiveTexture(GL_TEXTURE0 + i); //激活纹理
 
-			string number;
-			string name = textures[i].type;
+			std::string number;
+			std::string name = textures[i].type;
 			if (name == "texture_diffuse")
 				number = std::to_string(diffuseNr++);
 			else if (name == "texture_specular")

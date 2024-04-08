@@ -17,16 +17,14 @@
 #include <iostream>
 #include <vector>
 
-using namespace std;
-
 class Model
 {
 public:
 	//模型数据
-	vector<Texture> textures_loaded;
-	vector<Mesh> meshes;
-	string directory;
-	Model(string const& path)
+	std::vector<Texture> textures_loaded;
+	std::vector<Mesh> meshes;
+	std::string directory;
+	Model(std::string const& path)
 	{
 		loadModel(path);
 	}
@@ -37,14 +35,14 @@ public:
 			meshes[i].Draw(shader);
 	}
 private:
-	void loadModel(string const& path) //path:模型的路径
+	void loadModel(std::string const& path) //path:模型的路径
 	{
 		//加载模型
 		Assimp::Importer import;
 		const aiScene * scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
-			cout << "ERROR::ASSIMP::" << import.GetErrorString() << endl;
+			std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
 			return;
 		}
 		directory = path.substr(0, path.find_last_of('/'));
@@ -68,9 +66,9 @@ private:
 	}
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene)
 	{
-		vector<Vertex> vertices;
-		vector<unsigned int> indices;
-		vector<Texture> textures;
+		std::vector<Vertex> vertices;
+		std::vector<unsigned int> indices;
+		std::vector<Texture> textures;
 
 		//处理顶点数据
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -112,9 +110,9 @@ private:
 		{
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-			vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+			std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 			textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-			vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+			std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
 			//如果没有贴图，添加一个默认的diffuse贴图
@@ -130,9 +128,9 @@ private:
 
 		return Mesh(vertices, indices, textures);
 	}
-	vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
+	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
 	{
-		vector<Texture> textures;
+		std::vector<Texture> textures;
 		for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 		{
 			aiString str;
@@ -159,9 +157,9 @@ private:
 		}
 		return textures;
 	}
-	unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false)
+	unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma = false)
 	{
-		string filename = string(path);
+		std::string filename = std::string(path);
 		filename = directory + '/' + filename;
 
 		unsigned int textureID;

@@ -5,15 +5,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "imgui.h"
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD
-#include "backends/imgui_impl_glfw.cpp"
-#include "backends/imgui_impl_opengl3.cpp"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
+#include "editor_ui.h"
 #include "shader.h"
 #include "camera.h"
 #include "model.h"
@@ -23,7 +15,6 @@
 #include <fstream>
 #include <filesystem>
 namespace fs = std::filesystem;
-using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -99,16 +90,8 @@ int main()
         return -1;
     }
 
-    //加载imgui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext(); //创建上下文
-    ImGui::StyleColorsDark();
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 允许键盘控制
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
-    //// 设置渲染器后端
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init();
+    //在这里创建EditorUI类对象，然后使用
+    EditorUI myUI(window);
 
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
@@ -170,121 +153,17 @@ int main()
         lightShader.setMat4("model", model);
         myModel.Draw(lightShader);
 
-        //渲染ui
-        renderUI();
+        //渲染ui   在这里调用EditorUI对象的render方法
+        //renderUI();
+        myUI.showEditorUI();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
     glfwTerminate();
     return 0;
-}
-
-//判断文件的后缀是不是.obj
-bool isObjFile(const string& file)
-{
-    int dotPos = file.rfind('.'); //寻找最后一个.的位置
-    if (dotPos != string::npos && dotPos != 0)
-    {
-        if (file.substr(dotPos + 1) == "obj")
-            return true;
-    }
-    return false;
-}
-
-//在ui中创建指定文件夹的结构
-void buildFileTree(const fs::path& path)
-{
-    if (!fs::exists(path))
-    {
-        ImGui::Text("error! not exist %s", path);
-        return;
-    }
-
-    for (const auto& file : fs::directory_iterator(path))
-    {
-        if (file.is_directory()) //是文件夹
-        {
-            
-            if (ImGui::TreeNodeEx((fileId + fileIdCount++), ImGuiTreeNodeFlags_None, file.path().filename().string().c_str()))
-            {
-                buildFileTree(file.path());
-                ImGui::TreePop();
-            }
-        }
-        else
-        {
-            if (isObjFile(file.path().string())) //obj文件。可以点击，点击后会在场景原点创建一个
-            {
-                if (ImGui::Button(file.path().filename().string().c_str()))
-                {
-                    cout << "init obj" << endl; //创建该模型
-                }
-            }
-            else
-            {
-                ImGui::Text(file.path().filename().string().c_str());
-            }
-        }
-    }
-}
-
-//资源界面
-void showFileContentWindow()
-{
-    fs::path path = "E://vs c++ practice//WurtEngine//WurtEngine//res";
-    fileIdCount = 0;
-
-    ImGui::Begin("File Content"); 
-    ImGui::SetWindowFontScale(1.5f); //窗口字体放大
-    if (ImGui::TreeNode("assets"))
-    {
-        buildFileTree(path);
-        ImGui::TreePop();
-    }
-    ImGui::End();
-}
-
-void renderUI()
-{
-    //ui绘制
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    {
-        //开始绘制ImGui
-        ImGui::Begin("WurtEngine"); 
-        ImGui::Indent();
-        ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
-        /*ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
-        ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
-        ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);*/
-
-        //ImGui::SliderFloat3("dirLightPos", &dirLightPos.x, -10.0f, 10.0f);
-
-        ImGui::InputInt("pointLightCount", &pointLightCount);
-        for (int i = 0; i < pointLightCount; i++)
-        {
-            string temp1 = "pointLightPos[" + to_string(i) + "]";
-            ImGui::SliderFloat3(temp1.c_str(), &pointLightPos[i].x, -10.0f, 10.0f);
-            string temp2 = "pointLightAmbient[" + to_string(i) + "]";
-            ImGui::SliderFloat3(temp2.c_str(), &pointLightAmbient[i].x, 0.0f, 1.0f);
-        }
-        /*ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
-        ImGui::SliderFloat3("spotLightDir", &spotLightDir.x, -1.0f, 1.0f);*/
-        
-        ImGui::End();
-
-        showFileContentWindow();
-    }
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void processInput(GLFWwindow* window)
