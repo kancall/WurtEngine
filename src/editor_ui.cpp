@@ -1,6 +1,6 @@
 #include "editor_ui.h"
 
-EditorUI::EditorUI(GLFWwindow* window)
+EditorUI::EditorUI(GLFWwindow* window, EditorData* data)
 {
     //加载imgui
     IMGUI_CHECKVERSION();
@@ -13,10 +13,12 @@ EditorUI::EditorUI(GLFWwindow* window)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
 
+    this->data = data;
     //file content init
     fileIdCount = 0;
     fileId = "MyContentFileId";
     assetsPath = "E://vs c++ practice//WurtEngine//WurtEngine//res";
+
 }
 
 EditorUI::~EditorUI()
@@ -45,22 +47,27 @@ void EditorUI::showDetailWindow()
     //开始绘制ImGui
     ImGui::Begin("WurtEngine");
     ImGui::Indent();
-    ImGui::Text("text");
+    ImGui::InputInt("dirLightCount", &data->dirLightCount);
+    ImGui::InputInt("pointLightCount", &data->pointLightCount);
+    ImGui::InputInt("spotLightCount", &data->spotLightCount);
     //ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
     /*ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);*/
     
     //ImGui::SliderFloat3("dirLightPos", &dirLightPos.x, -10.0f, 10.0f);
-    
-    /*ImGui::InputInt("pointLightCount", &pointLightCount);
-    for (int i = 0; i < pointLightCount; i++)
+    if (data->pointLightCount > data->pointLights.size())
+    {
+        std::vector<PointLight> temp(data->pointLightCount - data->pointLights.size());
+        data->pointLights.insert(data->pointLights.end(), temp.begin(), temp.end());
+    }
+    for (int i = 0; i < data->pointLightCount; i++)
     {
         std::string temp1 = "pointLightPos[" + std::to_string(i) + "]";
-        ImGui::SliderFloat3(temp1.c_str(), &pointLightPos[i].x, -10.0f, 10.0f);
+        ImGui::SliderFloat3(temp1.c_str(), &data->pointLights[i].position.x, -10.0f, 10.0f);
         std::string temp2 = "pointLightAmbient[" + std::to_string(i) + "]";
-        ImGui::SliderFloat3(temp2.c_str(), &pointLightAmbient[i].x, 0.0f, 1.0f);
-    }*/
+        ImGui::SliderFloat3(temp2.c_str(), &data->pointLights[i].ambient.x, 0.0f, 1.0f);
+    }
     /*ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
     ImGui::SliderFloat3("spotLightDir", &spotLightDir.x, -1.0f, 1.0f);*/
     

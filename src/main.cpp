@@ -9,6 +9,7 @@
 #include "shader.h"
 #include "camera.h"
 #include "model.h"
+#include "light.h"
 
 #include <iostream>
 #include <string>
@@ -47,6 +48,8 @@ glm::vec3 pointLightAmbient[10];
 glm::vec3 ambientColor(-0.2f);
 glm::vec3 diffuseColor(1.0f);
 glm::vec3 specularColor(1.0f);
+
+std::vector<PointLight> pointLights;
 
 //phong
 int specuMi = 64;
@@ -91,7 +94,9 @@ int main()
     }
 
     //在这里创建EditorUI类对象，然后使用
-    EditorUI myUI(window);
+    EditorData* mydata = new EditorData;
+    EditorUI myUI(window, mydata);
+    pointLightAmbient[0] = glm::vec3(1.0, 1.0, 1.0); 
 
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
@@ -128,7 +133,7 @@ int main()
         objectShader.setFloat("pointLights[0].constant", 1.0f);
         objectShader.setFloat("pointLights[0].linear", 0.09f);
         objectShader.setFloat("pointLights[0].quadratic", 0.032f);
-        objectShader.setVec3("pointLights[0].ambient", pointLightAmbient[0]);
+        objectShader.setVec3("pointLights[0].ambient", mydata->pointLights[0].ambient);
         objectShader.setVec3("pointLights[0].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
         objectShader.setVec3("pointLights[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
 
@@ -144,17 +149,20 @@ int main()
         backpack.Draw(objectShader);
 
         lightShader.use();
-        lightShader.setVec3("lightColor", pointLightAmbient[0]);
         lightShader.setMat4("proj", projection);
         lightShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, pointLightPos[0]);
-        model = glm::scale(model, glm::vec3(0.2f));
-        lightShader.setMat4("model", model);
-        myModel.Draw(lightShader);
+        for (int i = 0; i < mydata->pointLightCount; i++)
+        {
+            lightShader.setVec3("lightColor", mydata->pointLights[i].ambient);
 
-        //渲染ui   在这里调用EditorUI对象的render方法
-        //renderUI();
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, mydata->pointLights[i].position);
+            model = glm::scale(model, glm::vec3(0.2f));
+            lightShader.setMat4("model", model);
+            myModel.Draw(lightShader);
+        }
+
+        //渲染ui
         myUI.showEditorUI();
 
         glfwSwapBuffers(window);
