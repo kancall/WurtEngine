@@ -21,14 +21,15 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-void renderUI();
+void scene(EditorData* mydata);
 
+EditorData* mydata;
+unsigned int Model::cnt = 0;
 // settings
-const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 600;
 
 //camera
-Camera camera(glm::vec3(1.0, 0.0, 6.0));
 float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2; //鼠标上一次所在的位置
 bool firstMouse = true; //重新开始一次摄像机的视角移动
 
@@ -94,17 +95,17 @@ int main()
     }
 
     //在这里创建EditorUI类对象，然后使用
-    EditorData* mydata = new EditorData;
+    mydata = new EditorData;
     EditorUI myUI(window, mydata);
-    pointLightAmbient[0] = glm::vec3(1.0, 1.0, 1.0); 
 
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
 
     Shader objectShader("src/modelLoad.vs", "src/modelLoad.fs");
     Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
+    mydata->addNewMateial("objectShader", &objectShader);
+    mydata->addNewMateial("lightShader", &lightShader);
     Model myModel("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
-    Model backpack("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
     
     // render loop
     // -----------
@@ -122,46 +123,35 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        objectShader.use();
-        objectShader.setVec3("viewPos", camera.Position);
-
-        //lights
-        objectShader.setInt("pointLightCount", pointLightCount);
-        objectShader.setFloat("material.shininess", specuMi);
-
-        objectShader.setVec3("pointLights[0].position", pointLightPos[0]);
-        objectShader.setFloat("pointLights[0].constant", 1.0f);
-        objectShader.setFloat("pointLights[0].linear", 0.09f);
-        objectShader.setFloat("pointLights[0].quadratic", 0.032f);
-        objectShader.setVec3("pointLights[0].ambient", mydata->pointLights[0].ambient);
-        objectShader.setVec3("pointLights[0].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
-        objectShader.setVec3("pointLights[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
-
-        //矩阵们
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        objectShader.setMat4("projection", projection);
-        objectShader.setMat4("view", view);
+        glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = mydata->camera->GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); 
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	
-        objectShader.setMat4("model", model);
-        backpack.Draw(objectShader);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 
-        lightShader.use();
-        lightShader.setMat4("proj", projection);
-        lightShader.setMat4("view", view);
+        Shader* lightShader = mydata->materials["lightShader"];
+        lightShader->use();
+        lightShader->setMat4("proj", projection);
+        lightShader->setMat4("view", view);
         for (int i = 0; i < mydata->pointLightCount; i++)
         {
-            lightShader.setVec3("lightColor", mydata->pointLights[i].ambient);
+            lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
 
             model = glm::mat4(1.0f);
             model = glm::translate(model, mydata->pointLights[i].position);
             model = glm::scale(model, glm::vec3(0.2f));
-            lightShader.setMat4("model", model);
+            lightShader->setMat4("model", model);
             myModel.Draw(lightShader);
         }
+        lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
 
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, mydata->dirLights[0].position);
+        model = glm::scale(model, glm::vec3(0.2f));
+        lightShader->setMat4("model", model);
+        myModel.Draw(lightShader);
+        //scene(mydata);
+        mydata->showNewModels();
         //渲染ui
         myUI.showEditorUI();
 
@@ -169,9 +159,68 @@ int main()
         glfwPollEvents();
     }
 
-
     glfwTerminate();
     return 0;
+}
+
+void scene(EditorData* mydata) //backpack myModel临时测试用，后续删除
+{
+    Shader* objectShader = mydata->materials["objectShader"];
+    objectShader->use();
+    objectShader->setVec3("viewPos", mydata->camera->Position);
+    objectShader->setFloat("material.shininess", specuMi);
+    //lights
+    objectShader->setVec3("dirLight.direction", mydata->dirLights[0].direction);
+    objectShader->setVec3("dirLight.ambient", mydata->dirLights[0].ambient);
+    objectShader->setVec3("dirLight.diffuse", mydata->dirLights[0].diffuse);
+    objectShader->setVec3("dirLight.specular", mydata->dirLights[0].specular);
+
+    objectShader->setInt("pointLightCount", mydata->pointLightCount);
+    for (int i = 0; i < mydata->pointLightCount; i++)
+    {
+        std::string index = "pointLights[" + std::to_string(i) + "]";
+
+        objectShader->setVec3(index + ".position", mydata->pointLights[0].position);
+        objectShader->setFloat(index + ".constant", 1.0f);
+        objectShader->setFloat(index + ".linear", 0.09f);
+        objectShader->setFloat(index + ".quadratic", 0.032f);
+        objectShader->setVec3(index + ".ambient", mydata->pointLights[0].ambient);
+        objectShader->setVec3(index + ".diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+        objectShader->setVec3(index + ".specular", glm::vec3(1.0f, 1.0f, 1.0f));
+    }
+    //矩阵们
+    glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    glm::mat4 view = mydata->camera->GetViewMatrix();
+    objectShader->setMat4("projection", projection);
+    objectShader->setMat4("view", view);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    objectShader->setMat4("model", model);
+    //背包模型draw
+    
+
+    Shader* lightShader= mydata->materials["lightShader"];
+    lightShader->use();
+    lightShader->setMat4("proj", projection);
+    lightShader->setMat4("view", view);
+    for (int i = 0; i < mydata->pointLightCount; i++)
+    {
+        lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, mydata->pointLights[i].position);
+        model = glm::scale(model, glm::vec3(0.2f));
+        lightShader->setMat4("model", model);
+        //方块模型draw
+    }
+    lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
+
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, mydata->dirLights[0].position);
+    model = glm::scale(model, glm::vec3(0.2f));
+    lightShader->setMat4("model", model);
+    //方块模型draw
 }
 
 void processInput(GLFWwindow* window)
@@ -180,27 +229,27 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)//向上
     {
-        camera.ProcessKeyboard(UP, deltaTime);
+        mydata->camera->ProcessKeyboard(UP, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)//向下
     {
-        camera.ProcessKeyboard(DOWN, deltaTime);
+        mydata->camera->ProcessKeyboard(DOWN, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)//向左
     {
-        camera.ProcessKeyboard(LEFT, deltaTime);
+        mydata->camera->ProcessKeyboard(LEFT, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)//向右
     {
-        camera.ProcessKeyboard(RIGHT, deltaTime);
+        mydata->camera->ProcessKeyboard(RIGHT, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)//向前
     {
-        camera.ProcessKeyboard(FORWARD, deltaTime);
+        mydata->camera->ProcessKeyboard(FORWARD, deltaTime);
     }
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)//向后
     {
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
+        mydata->camera->ProcessKeyboard(BACKWARD, deltaTime);
     }
 }
 
@@ -221,12 +270,12 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     float xoffset = xpos - lastX, yoffset = lastY - ypos; //屏幕起点坐标在左上角
     lastX = xpos, lastY = ypos;
 
-    camera.ProcessMouseMovement(xoffset, yoffset);
+    mydata->camera->ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    camera.ProcessMouseScroll(yoffset);
+    mydata->camera->ProcessMouseScroll(yoffset);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)

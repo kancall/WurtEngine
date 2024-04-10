@@ -20,16 +20,21 @@
 class Model
 {
 public:
+	static unsigned int cnt; //用于计数
+	unsigned int ID; //模型特有的ID，后续使用这个独有的ID对模型进行查找
+	std::string name; //模型的名字
 	//模型数据
 	std::vector<Texture> textures_loaded;
 	std::vector<Mesh> meshes;
 	std::string directory;
 	Model(std::string const& path)
 	{
+		ID = cnt++;
+		name = "test"; //测试用，后续更改
 		loadModel(path);
 	}
 
-	void Draw(Shader& shader)
+	void Draw(Shader* shader)
 	{
 		for (unsigned int i = 0; i < meshes.size(); i++)
 			meshes[i].Draw(shader);
@@ -116,14 +121,14 @@ private:
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
 			//如果没有贴图，添加一个默认的diffuse贴图
-			if (textures.size() <= 0)
+			/*if (textures.size() <= 0)
 			{
 				Texture texture;
-				texture.id = TextureFromFile("/texture.jpg", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
+				texture.id = TextureFromFile("/container2.png", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
 				texture.type = "texture_diffuse";
-				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//texture.jpg";
+				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//container2.png";
 				textures.push_back(texture);
-			}
+			}*/
 		}
 
 		return Mesh(vertices, indices, textures);

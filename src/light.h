@@ -7,6 +7,13 @@
 class DirLight
 {
 public:
+	glm::vec3 position;
+	glm::vec3 direction;
+
+	glm::vec3 ambient;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+
 	DirLight()
 	{
 		position = glm::vec3(1.0, 1.0, 1.0);
@@ -19,11 +26,6 @@ public:
 	~DirLight() {};
 
 private:
-	glm::vec3 position;
-	glm::vec3 direction;
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
 };
 
 class PointLight

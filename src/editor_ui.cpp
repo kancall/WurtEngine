@@ -18,6 +18,7 @@ EditorUI::EditorUI(GLFWwindow* window, EditorData* data)
     fileIdCount = 0;
     fileId = "MyContentFileId";
     assetsPath = "E://vs c++ practice//WurtEngine//WurtEngine//res";
+    selectedModelId = -1; //默认没选中
 
 }
 
@@ -26,6 +27,11 @@ EditorUI::~EditorUI()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+}
+
+void EditorUI::test()
+{
+
 }
 
 void EditorUI::showEditorUI()
@@ -47,15 +53,28 @@ void EditorUI::showDetailWindow()
     //开始绘制ImGui
     ImGui::Begin("WurtEngine");
     ImGui::Indent();
+
+    //选择指定的模型，显示其信息
+    if (data->models.count(selectedModelId))
+    {
+        ImGui::Text("Transform");
+        ImGui::Text("Rotation");
+        ImGui::Text("Scale");
+        Model* model = data->getSelectedModelData(selectedModelId); //这个错误了，不能用Model*会出错
+        Model temp = data->getSelectedModelDataTemp(selectedModelId);
+        ImGui::Text(temp.name.c_str());
+    }
+
     ImGui::InputInt("dirLightCount", &data->dirLightCount);
-    ImGui::InputInt("pointLightCount", &data->pointLightCount);
-    ImGui::InputInt("spotLightCount", &data->spotLightCount);
     //ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
     /*ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);*/
-    
-    //ImGui::SliderFloat3("dirLightPos", &dirLightPos.x, -10.0f, 10.0f);
+    ImGui::SliderFloat3("dirLightPos", &data->dirLights[0].position.x, -10.0f, 10.0f);
+    ImGui::SliderFloat3("dirLightAmbient", &data->dirLights[0].ambient.x, 0.0f, 1.0f);
+
+
+    ImGui::InputInt("pointLightCount", &data->pointLightCount);
     if (data->pointLightCount > data->pointLights.size())
     {
         std::vector<PointLight> temp(data->pointLightCount - data->pointLights.size());
@@ -68,9 +87,11 @@ void EditorUI::showDetailWindow()
         std::string temp2 = "pointLightAmbient[" + std::to_string(i) + "]";
         ImGui::SliderFloat3(temp2.c_str(), &data->pointLights[i].ambient.x, 0.0f, 1.0f);
     }
+
+    ImGui::InputInt("spotLightCount", &data->spotLightCount);
     /*ImGui::SliderFloat3("spotLightPos", &spotLightPos.x, -10.0f, 10.0f);
     ImGui::SliderFloat3("spotLightDir", &spotLightDir.x, -1.0f, 1.0f);*/
-    
+
     ImGui::End();
     
 }
@@ -114,6 +135,10 @@ void EditorUI::buildFileTree(const fs::path& path)
             {
                 if (ImGui::Button(file.path().filename().string().c_str()))
                 {
+                    this->data->addNewModel(file.path().string());
+                    selectedModelId = this->data->getSelectId(); //新创建物体，默认选中
+                    //更新ui
+                    //详情框显示模型的位置信息
                     std::cout << "init obj" << std::endl; //创建该模型
                 }
             }
