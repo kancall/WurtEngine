@@ -23,6 +23,10 @@ public:
 	static unsigned int cnt; //用于计数
 	unsigned int ID; //模型特有的ID，后续使用这个独有的ID对模型进行查找
 	std::string name; //模型的名字
+
+	glm::vec3 position;
+	glm::vec3 rotation;
+	glm::vec3 scale;
 	//模型数据
 	std::vector<Texture> textures_loaded;
 	std::vector<Mesh> meshes;
@@ -31,6 +35,10 @@ public:
 	{
 		ID = cnt++;
 		name = "test"; //测试用，后续更改
+		position = glm::vec3(0.0f);
+		rotation = glm::vec3(0.0f);
+		scale = glm::vec3(1.0f);
+
 		loadModel(path);
 	}
 

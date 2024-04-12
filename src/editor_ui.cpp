@@ -57,12 +57,11 @@ void EditorUI::showDetailWindow()
     //选择指定的模型，显示其信息
     if (data->models.count(selectedModelId))
     {
-        ImGui::Text("Transform");
-        ImGui::Text("Rotation");
-        ImGui::Text("Scale");
-        Model* model = data->getSelectedModelData(selectedModelId); //这个错误了，不能用Model*会出错
-        Model temp = data->getSelectedModelDataTemp(selectedModelId);
-        ImGui::Text(temp.name.c_str());
+        Model* model = data->getSelectedModelData(selectedModelId);
+        ImGui::SliderFloat3("Position", &model->position.x, -10.f, 10.f);
+        ImGui::SliderFloat3("Rotation", &model->rotation.x, -180.f, 180.f);
+        ImGui::SliderFloat3("Scale", &model->scale.x, -10.f, 10.f);
+        ImGui::Text(model->name.c_str());
     }
 
     ImGui::InputInt("dirLightCount", &data->dirLightCount);
@@ -135,8 +134,9 @@ void EditorUI::buildFileTree(const fs::path& path)
             {
                 if (ImGui::Button(file.path().filename().string().c_str()))
                 {
-                    this->data->addNewModel(file.path().string());
-                    selectedModelId = this->data->getSelectId(); //新创建物体，默认选中
+                    //新创建物体，默认选中
+                    Model* model = this->data->addNewModel(file.path().string());
+                    selectedModelId = model->ID; 
                     //更新ui
                     //详情框显示模型的位置信息
                     std::cout << "init obj" << std::endl; //创建该模型

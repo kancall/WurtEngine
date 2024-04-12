@@ -26,11 +26,9 @@ public:
 	std::vector<PointLight> pointLights;
 	std::vector<SpotLight> spotLights;
 
-	std::vector<Model> modelss; //临时用，不知道为什么用Model*就会出错
-	std::unordered_map<unsigned int, Model*> models; //存储新添加的模型  Model*好像有错误，待修正
-	//std::unordered_map<std::string, Model> models; //只存储新加的
+	std::unordered_map<unsigned int, Model*> gModels;//存储场景所有的模型
+	std::unordered_map<unsigned int, Model*> models; //存储新添加的模型
 	std::unordered_map<std::string, Shader*> materials;
-	std::unordered_map<int, Model> gModels;//存储场景所有的模型
 	EditorData() 
 	{
 		materials["default"] = new Shader("src/default.vs", "src/default.fs");
@@ -48,18 +46,13 @@ public:
 	}
 	~EditorData() {};
 	//创建新的模型  只用于存储新添加的模型，场景中默认设置好的模型不用管
-	void addNewModel(std::string const& path)
+	Model* addNewModel(std::string const& path)
 	{
-		//1。添加模型
-		Model model(path);
-		models[model.ID] = &model;
-		modelss.push_back(model);
+		//1.添加模型
+		Model* model = new Model(path);
+		models[model->ID] = model;
 
-		//2.用默认shader激活模型
-		//materials["default"]->use();
-		////绑定数据
-		//defalutShaderData(materials["default"]);
-		//model.Draw(materials["default"]);
+		return model;
 	}
 	//获取被选中物体的id
 	unsigned int getSelectId()
@@ -71,15 +64,12 @@ public:
 	{
 		//2.用默认shader激活模型
 		materials["default"]->use();
-		//绑定数据
-		defalutShaderData(materials["default"]);
-		/*for (std::unordered_map<unsigned int, Model*>::iterator it = models.begin(); it != models.end(); it++)
+		for (std::unordered_map<unsigned int, Model*>::iterator it = models.begin(); it != models.end(); it++)
 		{
+			//绑定数据
+			defalutShaderData(materials["default"], it->second);
+			//显示模型
 			it->second->Draw(materials["default"]);
-		}*/
-		for (int i = 1; i < modelss.size(); i++)
-		{
-			modelss[i].Draw(materials["default"]);
 		}
 	}
 
@@ -88,11 +78,7 @@ public:
 	{
 		return models[id];
 	}
-	//temp!!!!!!!!!!!!!!!!!测试用后续删除
-	Model getSelectedModelDataTemp(unsigned int id)
-	{
-		return modelss[0];
-	}
+
 	void addNewMateial(std::string const& name, Shader* shader)
 	{
 		if (materials.count(name))
@@ -103,7 +89,7 @@ public:
 		materials[name] = shader;
 	}
 
-	void defalutShaderData(Shader* defaultShader)
+	void defalutShaderData(Shader* defaultShader, Model* myModel)
 	{
 		defaultShader->setVec3("viewPos", this->camera->Position);
 		//lights
@@ -126,8 +112,12 @@ public:
 		defaultShader->setMat4("projection", projection);
 		defaultShader->setMat4("view", view);
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::translate(model, myModel->position);
+		model = glm::rotate(model, glm::radians(myModel->rotation.x), glm::vec3(1.0, 0.0, 0.0));
+		model = glm::rotate(model, glm::radians(myModel->rotation.y), glm::vec3(0.0, 1.0, 0.0));
+		model = glm::rotate(model, glm::radians(myModel->rotation.z), glm::vec3(0.0, 0.0, 1.0));
+		model = glm::scale(model, myModel->scale);
+
 		defaultShader->setMat4("model", model);
 	}
 
