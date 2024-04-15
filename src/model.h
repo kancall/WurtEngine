@@ -34,7 +34,7 @@ public:
 	Model(std::string const& path)
 	{
 		ID = cnt++;
-		name = "test"; //测试用，后续更改
+		name = path; //测试用，后续更改
 		position = glm::vec3(0.0f);
 		rotation = glm::vec3(0.0f);
 		scale = glm::vec3(1.0f);
@@ -143,14 +143,14 @@ private:
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
 			//如果没有贴图，添加一个默认的diffuse贴图
-			/*if (textures.size() <= 0)
+			if (textures.size() <= 0)
 			{
 				Texture texture;
-				texture.id = TextureFromFile("/container2.png", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
+				texture.id = TextureFromFile("/diffuse.jpg", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
 				texture.type = "texture_diffuse";
-				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//container2.png";
+				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//diffuse.jpg";
 				textures.push_back(texture);
-			}*/
+			}
 		}
 
 		return Mesh(vertices, indices, textures);

@@ -23,9 +23,16 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 void scene(EditorData* mydata);
 
+//datas
 EditorData* mydata;
 EditorUI* myUI;
 unsigned int Model::cnt = 0;
+
+Model* backpack;
+Model* floorModel[4];
+Model* pointlight;
+Model* dirlight;
+
 // settings
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 600;
@@ -39,26 +46,12 @@ float lastFrame = 0.0f; //上一帧的时间
 
 //light
 int pointLightCount = 1;
-glm::vec3 dirLightPos(1.0, 1.0, 1.0); //平行光的光源位置
-
-glm::vec3 spotLightPos(1.2f, 0.0f, 0.0f); //聚光灯的位置
-glm::vec3 spotLightDir(0.0f, 0.0f, -1.0f); //聚光灯的方向
-
-glm::vec3 pointLightPos[10]; //点光源的位置
-glm::vec3 pointLightAmbient[10];
-
-glm::vec3 ambientColor(-0.2f);
-glm::vec3 diffuseColor(1.0f);
-glm::vec3 specularColor(1.0f);
-
 std::vector<PointLight> pointLights;
 
 //phong
 int specuMi = 64;
 
 //ui
-const char* fileId = "MyContentFileId";
-int fileIdCount = 0;
 
 int main()
 {
@@ -106,10 +99,27 @@ int main()
     Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
     mydata->addNewMateial("objectShader", &objectShader);
     mydata->addNewMateial("lightShader", &lightShader);
-    Model* pointlight=new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
-    Model* dirlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//sphere//sphere.obj");
+
+    pointlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
     mydata->allModels[pointlight->ID] = pointlight;
+    dirlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//sphere//sphere.obj");
     mydata->allModels[dirlight->ID] = dirlight;
+
+    backpack = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
+    mydata->allModels[backpack->ID] = backpack;
+    for (int i = 0; i < 4; i++)
+    {
+        floorModel[i] = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//floor//floor.obj");
+        //mydata->allModels[floorModel[i]->ID] = floorModel[i];
+    }
+    floorModel[0]->position.z -= 3.0f;
+    floorModel[0]->position.y -= 10.0f;
+    floorModel[0]->rotation.x += 90.0f;
+    floorModel[1]->position.z -= 30.0f;
+    floorModel[2]->position.x -= 30.0f;
+    floorModel[2]->rotation.y -= 90.0f;
+    floorModel[3]->position.x += 30.0f;
+    floorModel[3]->rotation.y -= 90.0f;
     
     // render loop
     // -----------
@@ -130,9 +140,8 @@ int main()
         glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = mydata->camera->GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-
+        /*model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));*/
         Shader* lightShader = mydata->materials["lightShader"];
         lightShader->use();
         lightShader->setMat4("proj", projection);
@@ -140,7 +149,6 @@ int main()
         for (int i = 0; i < mydata->pointLightCount; i++)
         {
             lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
-
             model = glm::mat4(1.0f);
             //model = glm::translate(model, mydata->pointLights[i].position);
             model = glm::translate(model, pointlight->position);
@@ -149,13 +157,13 @@ int main()
             pointlight->Draw(lightShader);
         }
         lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
-
         model = glm::mat4(1.0f);
         model = glm::translate(model, dirlight->position);
         model = glm::scale(model, glm::vec3(0.2f));
         lightShader->setMat4("model", model);
         dirlight->Draw(lightShader);
-        //scene(mydata);
+
+        scene(mydata);
         mydata->showNewModels();
         //渲染ui
         myUI->showEditorUI();
@@ -170,62 +178,90 @@ int main()
 
 void scene(EditorData* mydata) //backpack myModel临时测试用，后续删除
 {
-    Shader* objectShader = mydata->materials["objectShader"];
-    objectShader->use();
-    objectShader->setVec3("viewPos", mydata->camera->Position);
-    objectShader->setFloat("material.shininess", specuMi);
-    //lights
-    objectShader->setVec3("dirLight.direction", mydata->dirLights[0].direction);
-    objectShader->setVec3("dirLight.ambient", mydata->dirLights[0].ambient);
-    objectShader->setVec3("dirLight.diffuse", mydata->dirLights[0].diffuse);
-    objectShader->setVec3("dirLight.specular", mydata->dirLights[0].specular);
+    /*mydata->materials["lightShader"]->use();
+    mydata->lightShaderData(mydata->materials["lightShader"], dirlight, true, 0);
+    dirlight->Draw(mydata->materials["lightShader"]);
+    mydata->lightShaderData(mydata->materials["lightShader"], pointlight, false, 0);
+    pointlight->Draw(mydata->materials["lightShader"]);*/
 
-    objectShader->setInt("pointLightCount", mydata->pointLightCount);
-    for (int i = 0; i < mydata->pointLightCount; i++)
-    {
-        std::string index = "pointLights[" + std::to_string(i) + "]";
 
-        objectShader->setVec3(index + ".position", mydata->pointLights[0].position);
-        objectShader->setFloat(index + ".constant", 1.0f);
-        objectShader->setFloat(index + ".linear", 0.09f);
-        objectShader->setFloat(index + ".quadratic", 0.032f);
-        objectShader->setVec3(index + ".ambient", mydata->pointLights[0].ambient);
-        objectShader->setVec3(index + ".diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
-        objectShader->setVec3(index + ".specular", glm::vec3(1.0f, 1.0f, 1.0f));
-    }
-    //矩阵们
-    glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    glm::mat4 view = mydata->camera->GetViewMatrix();
-    objectShader->setMat4("projection", projection);
-    objectShader->setMat4("view", view);
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    mydata->materials["objectShader"]->use();
+
+    mydata->phongShaderData(mydata->materials["objectShader"], backpack);
+    backpack->Draw(mydata->materials["objectShader"]);
+    
+    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[0]);
+    floorModel[0]->Draw(mydata->materials["objectShader"]);
+
+    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[1]);
+    floorModel[1]->Draw(mydata->materials["objectShader"]);
+
+    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[2]);
+    floorModel[2]->Draw(mydata->materials["objectShader"]);
+
+    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[3]);
+    floorModel[3]->Draw(mydata->materials["objectShader"]);
+
+    //objectShader->setVec3("viewPos", mydata->camera->Position);
+    //objectShader->setFloat("material.shininess", specuMi);
+    ////lights
+    //objectShader->setVec3("dirLight.direction", mydata->dirLights[0].direction);
+    //objectShader->setVec3("dirLight.ambient", mydata->dirLights[0].ambient);
+    //objectShader->setVec3("dirLight.diffuse", mydata->dirLights[0].diffuse);
+    //objectShader->setVec3("dirLight.specular", mydata->dirLights[0].specular);
+
+    //objectShader->setInt("pointLightCount", mydata->pointLightCount);
+    //for (int i = 0; i < mydata->pointLightCount; i++)
+    //{
+    //    std::string index = "pointLights[" + std::to_string(i) + "]";
+
+    //    objectShader->setVec3(index + ".position", mydata->pointLights[0].position);
+    //    objectShader->setFloat(index + ".constant", 1.0f);
+    //    objectShader->setFloat(index + ".linear", 0.09f);
+    //    objectShader->setFloat(index + ".quadratic", 0.032f);
+    //    objectShader->setVec3(index + ".ambient", mydata->pointLights[0].ambient);
+    //    objectShader->setVec3(index + ".diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+    //    objectShader->setVec3(index + ".specular", glm::vec3(1.0f, 1.0f, 1.0f));
+    //}
+    ////矩阵们
+    //glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    //glm::mat4 view = mydata->camera->GetViewMatrix();
+    //objectShader->setMat4("projection", projection);
+    //objectShader->setMat4("view", view);
+    //glm::mat4 model = glm::mat4(1.0f);
+    //model = glm::translate(model, backpack->position);
+    //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    //objectShader->setMat4("model", model);
+    //背包模型draw
+    //backpack->Draw(objectShader);
+
+    /*model = glm::mat4(1.0f);
+    model = glm::translate(model, floorModel->position);
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     objectShader->setMat4("model", model);
-    //背包模型draw
-    
+    floorModel->Draw(objectShader);*/
 
-    Shader* lightShader= mydata->materials["lightShader"];
-    lightShader->use();
-    lightShader->setMat4("proj", projection);
-    lightShader->setMat4("view", view);
-    for (int i = 0; i < mydata->pointLightCount; i++)
-    {
-        lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
+    //Shader* lightShader= mydata->materials["lightShader"];
+    //lightShader->use();
+    //lightShader->setMat4("proj", projection);
+    //lightShader->setMat4("view", view);
+    //for (int i = 0; i < mydata->pointLightCount; i++)
+    //{
+    //    lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
 
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, mydata->pointLights[i].position);
-        model = glm::scale(model, glm::vec3(0.2f));
-        lightShader->setMat4("model", model);
-        //方块模型draw
-    }
-    lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
+    //    model = glm::mat4(1.0f);
+    //    model = glm::translate(model, mydata->pointLights[i].position);
+    //    model = glm::scale(model, glm::vec3(0.2f));
+    //    lightShader->setMat4("model", model);
+    //    //方块模型draw
+    //}
+    //lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
 
-    model = glm::mat4(1.0f);
-    model = glm::translate(model, mydata->dirLights[0].position);
-    model = glm::scale(model, glm::vec3(0.2f));
-    lightShader->setMat4("model", model);
-    //方块模型draw
+    //model = glm::mat4(1.0f);
+    //model = glm::translate(model, mydata->dirLights[0].position);
+    //model = glm::scale(model, glm::vec3(0.2f));
+    //lightShader->setMat4("model", model);
+    ////方块模型draw
 }
 
 void processInput(GLFWwindow* window)

@@ -66,8 +66,8 @@ void EditorUI::showDetailWindow()
         ImGui::Text(model->name.c_str());
     }
 
+    ImGui::SliderInt("specuMi", &data->specuMi, 0, 1024);
     ImGui::InputInt("dirLightCount", &data->dirLightCount);
-    //ImGui::SliderInt("specuMi", &specuMi, 0, 1024);
     /*ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);*/

@@ -24,6 +24,7 @@ public:
 	int pointLightCount;
 	int spotLightCount;
 
+	int specuMi; //高光材质的幂
 	std::vector<DirLight> dirLights;
 	std::vector<PointLight> pointLights;
 	std::vector<SpotLight> spotLights;
@@ -37,6 +38,7 @@ public:
 		
 		camera = new Camera(glm::vec3(0.0, 0.0, 6.0));
 		
+		specuMi = 64;
 		//light
 		dirLightCount = 1;
 		pointLightCount = 1;
@@ -170,6 +172,65 @@ public:
 		defaultShader->setMat4("model", model);
 	}
 
+	void lightShaderData(Shader* lightShader, Model* mymodel, bool isDirLight, int i) //后续可以优化一下，给light添加一个enum，根据enum判断是哪个灯类型
+	{
+		glm::mat4 projection = glm::perspective(glm::radians(this->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f);
+		glm::mat4 view = this->camera->GetViewMatrix();
+		glm::mat4 model = glm::mat4(1.0f);
+		if (isDirLight)
+		{
+			model = glm::translate(model, this->dirLights[i].position);
+			model = glm::scale(model, glm::vec3(0.2f));
+			lightShader->setVec3("lightColor", this->dirLights[i].ambient);
+		}
+		else
+		{
+			model = glm::translate(model, this->pointLights[i].position);
+			model = glm::scale(model, glm::vec3(0.2f));
+			lightShader->setVec3("lightColor", this->pointLights[i].ambient);
+		}
+		lightShader->setMat4("proj", projection);
+		lightShader->setMat4("view", view);
+		lightShader->setMat4("model", model);
+
+	}
+
+	void phongShaderData(Shader* phongShader, Model* myModel)
+	{
+		phongShader->setVec3("viewPos", this->camera->Position);
+		phongShader->setFloat("material.shininess", this->specuMi);
+		//lights
+		phongShader->setVec3("dirLight.direction", this->dirLights[0].direction);
+		phongShader->setVec3("dirLight.ambient", this->dirLights[0].ambient);
+		phongShader->setVec3("dirLight.diffuse", this->dirLights[0].diffuse);
+		phongShader->setVec3("dirLight.specular", this->dirLights[0].specular);
+
+		phongShader->setInt("pointLightCount", this->pointLightCount);
+		for (int i = 0; i < this->pointLightCount; i++)
+		{
+			std::string index = "pointLights[" + std::to_string(i) + "]";
+
+			phongShader->setVec3(index + ".position", this->pointLights[0].position);
+			phongShader->setFloat(index + ".constant", 1.0f);
+			phongShader->setFloat(index + ".linear", 0.09f);
+			phongShader->setFloat(index + ".quadratic", 0.032f);
+			phongShader->setVec3(index + ".ambient", this->pointLights[0].ambient);
+			phongShader->setVec3(index + ".diffuse", this->pointLights[0].diffuse);
+			phongShader->setVec3(index + ".specular", this->pointLights[0].specular);
+		}
+		//矩阵们
+		glm::mat4 projection = glm::perspective(glm::radians(this->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+		glm::mat4 view = this->camera->GetViewMatrix();
+		phongShader->setMat4("projection", projection);
+		phongShader->setMat4("view", view);
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, myModel->position);
+		model = glm::rotate(model, glm::radians(myModel->rotation.x), glm::vec3(1.0, 0.0, 0.0));
+		model = glm::rotate(model, glm::radians(myModel->rotation.y), glm::vec3(0.0, 1.0, 0.0));
+		model = glm::rotate(model, glm::radians(myModel->rotation.z), glm::vec3(0.0, 0.0, 1.0));
+		model = glm::scale(model, myModel->scale);
+		phongShader->setMat4("model", model);
+	}
 private:
 
 };
