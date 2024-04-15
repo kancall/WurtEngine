@@ -24,6 +24,7 @@ void processInput(GLFWwindow* window);
 void scene(EditorData* mydata);
 
 EditorData* mydata;
+EditorUI* myUI;
 unsigned int Model::cnt = 0;
 // settings
 const unsigned int SCR_WIDTH = 1000;
@@ -96,7 +97,7 @@ int main()
 
     //在这里创建EditorUI类对象，然后使用
     mydata = new EditorData;
-    EditorUI myUI(window, mydata);
+    myUI = new EditorUI(window, mydata);
 
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
@@ -105,7 +106,10 @@ int main()
     Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
     mydata->addNewMateial("objectShader", &objectShader);
     mydata->addNewMateial("lightShader", &lightShader);
-    Model myModel("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
+    Model* pointlight=new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
+    Model* dirlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//sphere//sphere.obj");
+    mydata->allModels[pointlight->ID] = pointlight;
+    mydata->allModels[dirlight->ID] = dirlight;
     
     // render loop
     // -----------
@@ -138,22 +142,23 @@ int main()
             lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
 
             model = glm::mat4(1.0f);
-            model = glm::translate(model, mydata->pointLights[i].position);
+            //model = glm::translate(model, mydata->pointLights[i].position);
+            model = glm::translate(model, pointlight->position);
             model = glm::scale(model, glm::vec3(0.2f));
             lightShader->setMat4("model", model);
-            myModel.Draw(lightShader);
+            pointlight->Draw(lightShader);
         }
         lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
 
         model = glm::mat4(1.0f);
-        model = glm::translate(model, mydata->dirLights[0].position);
+        model = glm::translate(model, dirlight->position);
         model = glm::scale(model, glm::vec3(0.2f));
         lightShader->setMat4("model", model);
-        myModel.Draw(lightShader);
+        dirlight->Draw(lightShader);
         //scene(mydata);
         mydata->showNewModels();
         //渲染ui
-        myUI.showEditorUI();
+        myUI->showEditorUI();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -225,6 +230,20 @@ void scene(EditorData* mydata) //backpack myModel临时测试用，后续删除
 
 void processInput(GLFWwindow* window)
 {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) //按下鼠标左键
+    {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        if (myUI->selectedModelId != -1)
+        {
+            myUI->lastSelected = myUI->selectedModelId;
+        }
+        myUI->selectedModelId = mydata->getSelectId(xpos, ypos);
+
+        if (myUI->selectedModelId != -1)
+            std::cout << "select model id : " << myUI->selectedModelId << std::endl;
+
+    }
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)//向上

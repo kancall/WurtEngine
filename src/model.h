@@ -39,6 +39,8 @@ public:
 		rotation = glm::vec3(0.0f);
 		scale = glm::vec3(1.0f);
 
+		//std::cout << "Model::Model id = " << ID << std::endl;
+
 		loadModel(path);
 	}
 
@@ -46,6 +48,18 @@ public:
 	{
 		for (unsigned int i = 0; i < meshes.size(); i++)
 			meshes[i].Draw(shader);
+	}
+	bool pickTrace(glm::vec3 direc, glm::vec3 cameraPos)
+	{
+		//遍历所有mesh判断有没有交点，如果有返回true
+		for (int i = 0; i < meshes.size(); i++)
+		{
+			if (meshes[i].pickTrace(direc, cameraPos, this->position))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 private:
 	void loadModel(std::string const& path) //path:模型的路径

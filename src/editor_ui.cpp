@@ -19,7 +19,7 @@ EditorUI::EditorUI(GLFWwindow* window, EditorData* data)
     fileId = "MyContentFileId";
     assetsPath = "E://vs c++ practice//WurtEngine//WurtEngine//res";
     selectedModelId = -1; //默认没选中
-
+    lastSelected = selectedModelId;
 }
 
 EditorUI::~EditorUI()
@@ -54,8 +54,10 @@ void EditorUI::showDetailWindow()
     ImGui::Begin("WurtEngine");
     ImGui::Indent();
 
-    //选择指定的模型，显示其信息
-    if (data->models.count(selectedModelId))
+    //选择指定的模型，显示其信息。如果没选中模型，就显示上一次选中的
+    if (selectedModelId == -1)
+        selectedModelId = lastSelected;
+    if (data->allModels.count(selectedModelId))
     {
         Model* model = data->getSelectedModelData(selectedModelId);
         ImGui::SliderFloat3("Position", &model->position.x, -10.f, 10.f);
@@ -69,7 +71,7 @@ void EditorUI::showDetailWindow()
     /*ImGui::SliderFloat3("ambientColor", &ambientColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("diffuseColor", &diffuseColor.x, 0.0f, 1.0f);
     ImGui::SliderFloat3("specularColor", &specularColor.x, 0.0f, 1.0f);*/
-    ImGui::SliderFloat3("dirLightPos", &data->dirLights[0].position.x, -10.0f, 10.0f);
+    //ImGui::SliderFloat3("dirLightPos", &data->dirLights[0].position.x, -10.0f, 10.0f);
     ImGui::SliderFloat3("dirLightAmbient", &data->dirLights[0].ambient.x, 0.0f, 1.0f);
 
 
@@ -81,8 +83,8 @@ void EditorUI::showDetailWindow()
     }
     for (int i = 0; i < data->pointLightCount; i++)
     {
-        std::string temp1 = "pointLightPos[" + std::to_string(i) + "]";
-        ImGui::SliderFloat3(temp1.c_str(), &data->pointLights[i].position.x, -10.0f, 10.0f);
+        /*std::string temp1 = "pointLightPos[" + std::to_string(i) + "]";
+        ImGui::SliderFloat3(temp1.c_str(), &data->pointLights[i].position.x, -10.0f, 10.0f);*/
         std::string temp2 = "pointLightAmbient[" + std::to_string(i) + "]";
         ImGui::SliderFloat3(temp2.c_str(), &data->pointLights[i].ambient.x, 0.0f, 1.0f);
     }

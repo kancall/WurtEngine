@@ -1,6 +1,8 @@
 #ifndef EDITOR_DATA_H
 #define EDITOR_DATA_H
 
+#include <GL/glut.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -26,14 +28,14 @@ public:
 	std::vector<PointLight> pointLights;
 	std::vector<SpotLight> spotLights;
 
-	std::unordered_map<unsigned int, Model*> gModels;//存储场景所有的模型
+	std::unordered_map<unsigned int, Model*> allModels;//存储场景所有的模型
 	std::unordered_map<unsigned int, Model*> models; //存储新添加的模型
 	std::unordered_map<std::string, Shader*> materials;
 	EditorData() 
 	{
 		materials["default"] = new Shader("src/default.vs", "src/default.fs");
 		
-		camera = new Camera(glm::vec3(1.0, 0.0, 6.0));
+		camera = new Camera(glm::vec3(0.0, 0.0, 6.0));
 		
 		//light
 		dirLightCount = 1;
@@ -51,13 +53,60 @@ public:
 		//1.添加模型
 		Model* model = new Model(path);
 		models[model->ID] = model;
+		allModels[model->ID] = model; //存储所有物体，新创建的物体也要加进来
 
 		return model;
 	}
-	//获取被选中物体的id
-	unsigned int getSelectId()
+	//转换鼠标位置到3维空间
+	glm::vec3 getWorldPos(int xpos, int ypos, glm::mat4 view, glm::mat4 proj)
 	{
-		return 1;
+		GLdouble modelMatrix[16] = {
+			view[0][0],view[0][1], view[0][2], view[0][3],
+			view[1][0], view[1][1], view[1][2], view[1][3],
+			view[2][0], view[2][1], view[2][2], view[2][3],
+			view[3][0], view[3][1], view[3][2], view[3][3]
+		};
+		GLdouble projMatrix[16] = {
+			proj[0][0], proj[0][1], proj[0][2], proj[0][3],
+			proj[1][0], proj[1][1], proj[1][2], proj[1][3],
+			proj[2][0], proj[2][1], proj[2][2], proj[2][3],
+			proj[3][0], proj[3][1], proj[3][2], proj[3][3]
+		};
+		GLint viewport[4];
+		glGetIntegerv(GL_VIEWPORT, viewport);
+
+		GLdouble objx, objy, objz;
+		GLfloat windowx, windowy, windowz;
+		float mouse_x = xpos;
+		float mouse_y = ypos;
+		windowx = (float)mouse_x;
+		windowy = (float)viewport[3] - (float)mouse_y;
+		glReadBuffer(GL_BACK);
+		glReadPixels(mouse_x, int(windowy), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &windowz);
+		gluUnProject(windowx, windowy, windowz, modelMatrix, projMatrix, viewport, &objx, &objy, &objz);
+		
+		glm::vec3 res = glm::vec3(objx, objy, objz);
+		return res;
+	}
+	
+	int getSelectId(int xpos, int ypos)
+	{
+		//1.进行坐标转换，把屏幕坐标转换为世界坐标
+		glm::mat4 projection = glm::perspective(glm::radians(this->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f);
+		glm::mat4 view = this->camera->GetViewMatrix();
+		glm::vec3 worldPos = getWorldPos(xpos, ypos, view, projection);
+		//2.将转换后得到的坐标和摄像机坐标相连，得到一条射线
+		//3.使用射线，一个个遍历模型，再在模型中一个个遍历三角形，和射线进行判断有没有交点，如果有就选中模型了，返回模型id
+		//目前遇到的问题：因为是遍历数组一个个判断，如果有两个模型一前一后，如果先判断后面那个模型、并且有交点，那么其实实际上应该选前面那个，现实是选了后面的。可以通过深度值来判断一下
+		for (std::unordered_map<unsigned int, Model*>::iterator it = allModels.begin(); it != allModels.end(); it++)
+		{
+			if (it->second->pickTrace(worldPos, this->camera->Position))
+			{
+				return it->first;
+			}
+		}
+
+		return -1;
 	}
 	//显示所有的新增模型
 	void showNewModels()
@@ -76,7 +125,7 @@ public:
 	//返回指定id的model
 	Model* getSelectedModelData(unsigned int id)
 	{
-		return models[id];
+		return allModels[id];
 	}
 
 	void addNewMateial(std::string const& name, Shader* shader)

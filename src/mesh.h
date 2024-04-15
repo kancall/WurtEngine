@@ -71,6 +71,37 @@ public:
 
 		//glActiveTexture(GL_TEXTURE0);
 	}
+
+	bool pickTrace(glm::vec3 direc, glm::vec3 cameraPos, glm::vec3 modelWorldPos)
+	{
+		//逐片元判断有没有交点，如果有返回true
+		for (int i = 0; i < indices.size(); i+=3)
+		{
+			glm::vec3 v1 = vertices[indices[i]].Position + modelWorldPos;
+			glm::vec3 v2 = vertices[indices[i + 1]].Position + modelWorldPos;
+			glm::vec3 v3 = vertices[indices[i + 2]].Position + modelWorldPos;
+
+			glm::vec3 dir1 = v2 - v1;
+			glm::vec3 dir2 = v3 - v1;
+			glm::vec3 n = glm::normalize(glm::cross(dir1, dir2));
+
+			//先判断射线和三角形所在面有无交点
+			glm::vec3 eyeview = cameraPos - direc;
+			double t = glm::dot(v1 - cameraPos, n) / glm::dot(n, eyeview);
+			if (t >= 0)
+				continue;
+			//再判断该交点是否在三角形内部
+			glm::vec3 p = cameraPos + glm::vec3(eyeview.x * t, eyeview.y * t, eyeview.z * t);
+			glm::vec3 n1 = glm::normalize(glm::cross(p - v1, v2 - v1));
+			glm::vec3 n2 = glm::normalize(glm::cross(p - v2, v3 - v2));
+			glm::vec3 n3 = glm::normalize(glm::cross(p - v3, v1 - v3));
+			if (!(glm::dot(n1, n2) > 0 && glm::dot(n1, n3) > 0))
+				continue;
+
+			return true;
+		}
+		return false;
+	}
 private:
 	//顶点数据
 	unsigned int VBO, EBO;

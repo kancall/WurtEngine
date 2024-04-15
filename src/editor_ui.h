@@ -21,6 +21,9 @@ class EditorUI
 public:
 	EditorUI(GLFWwindow* window, EditorData* data);
 	~EditorUI();
+	int selectedModelId; //当前被选中的物体
+	int lastSelected; //上一次选择的物体
+
 	void test(); //测试界面，显示物体的信息，并且切换物体的时候信息也会切换
 	void showEditorUI();
 	void showDetailWindow(); //展示物体信息的ui界面
@@ -34,7 +37,6 @@ private:
 	fs::path assetsPath; //资源目录的路径
 
 	EditorData* data;
-	unsigned int selectedModelId; //当前被选中的物体
 };
 
 #endif // !EDITORUI_H
