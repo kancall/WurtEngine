@@ -62,7 +62,7 @@ void EditorUI::showDetailWindow()
         Model* model = data->getSelectedModelData(selectedModelId);
         ImGui::SliderFloat3("Position", &model->position.x, -10.f, 10.f);
         ImGui::SliderFloat3("Rotation", &model->rotation.x, -180.f, 180.f);
-        ImGui::SliderFloat3("Scale", &model->scale.x, -10.f, 10.f);
+        ImGui::SliderFloat3("Scale", &model->scale.x, -1.f, 1.f);
         ImGui::Text(model->name.c_str());
     }
 

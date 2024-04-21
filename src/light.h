@@ -16,7 +16,7 @@ public:
 
 	DirLight()
 	{
-		position = glm::vec3(1.0, 1.0, 1.0);
+		position = glm::vec3(0.0);
 		direction = glm::vec3(-0.2f, -1.0f, -0.3f);
 
 		ambient = glm::vec3(0.2f);
@@ -42,7 +42,7 @@ public:
 	glm::vec3 specular;
 	PointLight()
 	{
-		position = glm::vec3(1.0f);
+		position = glm::vec3(0.0f);
 
 		constant = 1.0f;
 		linear = 0.09f;
@@ -61,7 +61,7 @@ class SpotLight
 public:
 	SpotLight()
 	{
-		position = glm::vec3(1.0f);
+		position = glm::vec3(0.0f);
 		direction = glm::vec3(0.0, 0.0, -1.0);
 
 		cutOff = glm::cos(glm::radians(12.5f));

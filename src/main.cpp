@@ -22,6 +22,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 void scene(EditorData* mydata);
+unsigned int loadTexture(char const* path);
 
 //datas
 EditorData* mydata;
@@ -29,9 +30,9 @@ EditorUI* myUI;
 unsigned int Model::cnt = 0;
 
 Model* backpack;
-Model* floorModel[4];
 Model* pointlight;
 Model* dirlight;
+Model* person;
 
 // settings
 const unsigned int SCR_WIDTH = 1000;
@@ -50,8 +51,6 @@ std::vector<PointLight> pointLights;
 
 //phong
 int specuMi = 64;
-
-//ui
 
 int main()
 {
@@ -88,17 +87,44 @@ int main()
         return -1;
     }
 
+    stbi_set_flip_vertically_on_load(true);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_STENCIL_TEST);
+
+    float planeVertices[] = {
+         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+        -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+
+         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+         5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+    };
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+    glBindVertexArray(planeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+    unsigned int floorTexture = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//texture//diffuse.jpg");
+
     //在这里创建EditorUI类对象，然后使用
     mydata = new EditorData;
     myUI = new EditorUI(window, mydata);
 
-    stbi_set_flip_vertically_on_load(true);
-    glEnable(GL_DEPTH_TEST);
 
     Shader objectShader("src/modelLoad.vs", "src/modelLoad.fs");
     Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
+    Shader floorShader("src/floorVs.vs", "src/floorFs.fs");
     mydata->addNewMateial("objectShader", &objectShader);
     mydata->addNewMateial("lightShader", &lightShader);
+    mydata->addNewMateial("floorShader", &floorShader);
 
     pointlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
     mydata->allModels[pointlight->ID] = pointlight;
@@ -107,20 +133,9 @@ int main()
 
     backpack = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
     mydata->allModels[backpack->ID] = backpack;
-    for (int i = 0; i < 4; i++)
-    {
-        floorModel[i] = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//floor//floor.obj");
-        //mydata->allModels[floorModel[i]->ID] = floorModel[i];
-    }
-    floorModel[0]->position.z -= 3.0f;
-    floorModel[0]->position.y -= 10.0f;
-    floorModel[0]->rotation.x += 90.0f;
-    floorModel[1]->position.z -= 30.0f;
-    floorModel[2]->position.x -= 30.0f;
-    floorModel[2]->rotation.y -= 90.0f;
-    floorModel[3]->position.x += 30.0f;
-    floorModel[3]->rotation.y -= 90.0f;
-    
+    person = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//nanosuit//nanosuit.obj");
+    mydata->allModels[person->ID] = person;
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -135,13 +150,75 @@ int main()
 
         // 清空缓存
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        {
+            mydata->materials["floorShader"]->use();
+            mydata->materials["floorShader"]->setInt("texture_diffuse1", 1);
+
+            //矩阵们
+            glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+            glm::mat4 view = mydata->camera->GetViewMatrix();
+            mydata->materials["floorShader"]->setMat4("projection", projection);
+            mydata->materials["floorShader"]->setMat4("view", view);
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0));
+            /*model = glm::rotate(model, glm::radians(myModel->rotation.x), glm::vec3(1.0, 0.0, 0.0));
+            model = glm::rotate(model, glm::radians(myModel->rotation.y), glm::vec3(0.0, 1.0, 0.0));
+            model = glm::rotate(model, glm::radians(myModel->rotation.z), glm::vec3(0.0, 0.0, 1.0));*/
+            model = glm::scale(model, glm::vec3(1.0f));
+            mydata->materials["floorShader"]->setMat4("model", model);
+            glBindVertexArray(planeVAO);
+            glBindTexture(GL_TEXTURE_2D, floorTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glBindVertexArray(0);
+        }
+        {
+        //    mydata->materials["objectShader"]->use();
+        //    mydata->materials["objectShader"]->setInt("texture_diffuse1", 0);
+        //    mydata->materials["objectShader"]->setVec3("viewPos", mydata->camera->Position);
+        //    mydata->materials["objectShader"]->setFloat("material.shininess", mydata->specuMi);
+        //    //lights
+        //    mydata->materials["objectShader"]->setVec3("dirLight.direction", mydata->dirLights[0].direction);
+        //    mydata->materials["objectShader"]->setVec3("dirLight.ambient", mydata->dirLights[0].ambient);
+        //    mydata->materials["objectShader"]->setVec3("dirLight.diffuse", mydata->dirLights[0].diffuse);
+        //    mydata->materials["objectShader"]->setVec3("dirLight.specular", mydata->dirLights[0].specular);
+
+        //    mydata->materials["objectShader"]->setInt("pointLightCount", mydata->pointLightCount);
+        //    for (int i = 0; i < mydata->pointLightCount; i++)
+        //    {
+        //        std::string index = "pointLights[" + std::to_string(i) + "]";
+
+        //        mydata->materials["objectShader"]->setVec3(index + ".position", mydata->pointLights[0].position);
+        //        mydata->materials["objectShader"]->setFloat(index + ".constant", 1.0f);
+        //        mydata->materials["objectShader"]->setFloat(index + ".linear", 0.09f);
+        //        mydata->materials["objectShader"]->setFloat(index + ".quadratic", 0.032f);
+        //        mydata->materials["objectShader"]->setVec3(index + ".ambient", mydata->pointLights[0].ambient);
+        //        mydata->materials["objectShader"]->setVec3(index + ".diffuse", mydata->pointLights[0].diffuse);
+        //        mydata->materials["objectShader"]->setVec3(index + ".specular", mydata->pointLights[0].specular);
+        //    }
+        //    //矩阵们
+        //    glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+        //    glm::mat4 view = mydata->camera->GetViewMatrix();
+        //    mydata->materials["objectShader"]->setMat4("projection", projection);
+        //    mydata->materials["objectShader"]->setMat4("view", view);
+        //    glm::mat4 model = glm::mat4(1.0f);
+        //    model = glm::translate(model, glm::vec3(0.0f));
+        //    /*model = glm::rotate(model, glm::radians(myModel->rotation.x), glm::vec3(1.0, 0.0, 0.0));
+        //    model = glm::rotate(model, glm::radians(myModel->rotation.y), glm::vec3(0.0, 1.0, 0.0));
+        //    model = glm::rotate(model, glm::radians(myModel->rotation.z), glm::vec3(0.0, 0.0, 1.0));*/
+        //    model = glm::scale(model, glm::vec3(1.0f));
+        //    mydata->materials["objectShader"]->setMat4("model", model);
+
+        //    glBindVertexArray(planeVAO);
+        //    glBindTexture(GL_TEXTURE_2D, floorTexture);
+        //    glDrawArrays(GL_TRIANGLES, 0, 36);
+        //    glBindVertexArray(0);
+        }
 
         glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = mydata->camera->GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
-        /*model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));*/
         Shader* lightShader = mydata->materials["lightShader"];
         lightShader->use();
         lightShader->setMat4("proj", projection);
@@ -150,8 +227,8 @@ int main()
         {
             lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
             model = glm::mat4(1.0f);
-            //model = glm::translate(model, mydata->pointLights[i].position);
-            model = glm::translate(model, pointlight->position);
+            model = glm::translate(model, pointlight->position); //在imgui中改的是模型的position，所以这里要用模型的position，然后根据模型的position改一下data中的数据
+            mydata->pointLights[i].position = pointlight->position;
             model = glm::scale(model, glm::vec3(0.2f));
             lightShader->setMat4("model", model);
             pointlight->Draw(lightShader);
@@ -176,7 +253,7 @@ int main()
     return 0;
 }
 
-void scene(EditorData* mydata) //backpack myModel临时测试用，后续删除
+void scene(EditorData* mydata)
 {
     /*mydata->materials["lightShader"]->use();
     mydata->lightShaderData(mydata->materials["lightShader"], dirlight, true, 0);
@@ -189,26 +266,9 @@ void scene(EditorData* mydata) //backpack myModel临时测试用，后续删除
 
     mydata->phongShaderData(mydata->materials["objectShader"], backpack);
     backpack->Draw(mydata->materials["objectShader"]);
-    
-    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[0]);
-    floorModel[0]->Draw(mydata->materials["objectShader"]);
 
-    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[1]);
-    floorModel[1]->Draw(mydata->materials["objectShader"]);
-
-    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[2]);
-    floorModel[2]->Draw(mydata->materials["objectShader"]);
-
-    mydata->phongShaderData(mydata->materials["objectShader"], floorModel[3]);
-    floorModel[3]->Draw(mydata->materials["objectShader"]);
-
-    //objectShader->setVec3("viewPos", mydata->camera->Position);
-    //objectShader->setFloat("material.shininess", specuMi);
-    ////lights
-    //objectShader->setVec3("dirLight.direction", mydata->dirLights[0].direction);
-    //objectShader->setVec3("dirLight.ambient", mydata->dirLights[0].ambient);
-    //objectShader->setVec3("dirLight.diffuse", mydata->dirLights[0].diffuse);
-    //objectShader->setVec3("dirLight.specular", mydata->dirLights[0].specular);
+    mydata->phongShaderData(mydata->materials["objectShader"], person);
+    person->Draw(mydata->materials["objectShader"]);
 
     //objectShader->setInt("pointLightCount", mydata->pointLightCount);
     //for (int i = 0; i < mydata->pointLightCount; i++)
@@ -268,6 +328,12 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) //按下鼠标左键
     {
+        //如果点击在ui上就结束
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse)
+        {
+            return;
+        }
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         if (myUI->selectedModelId != -1)
@@ -336,4 +402,40 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+unsigned int loadTexture(char const* path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
