@@ -15,6 +15,7 @@
 #include <string>
 #include <fstream>
 #include <filesystem>
+#include <map>
 namespace fs = std::filesystem;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
@@ -91,6 +92,9 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_STENCIL_TEST);
+    //启用混合，并设置混合函数
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float planeVertices[] = {
          5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
@@ -112,7 +116,36 @@ int main()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
-    unsigned int floorTexture = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//texture//diffuse.jpg");
+
+    float transparentVertices[] = {
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+        1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+    std::vector<glm::vec3> windows
+    {
+        glm::vec3(-1.5f, -2.0f, -0.48f),
+        glm::vec3(1.5f, -2.0f, 0.51f),
+        glm::vec3(0.0f, -2.0f, 0.7f),
+        glm::vec3(-0.3f, -2.0f, -2.3f),
+        glm::vec3(0.5f, -2.0f, -0.6f)
+    };
+
+    unsigned int grassVAO, grassVBO;
+    glGenVertexArrays(1, &grassVAO);
+    glGenBuffers(1, &grassVBO);
+    glBindVertexArray(grassVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), &transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
 
     //在这里创建EditorUI类对象，然后使用
     mydata = new EditorData;
@@ -122,15 +155,20 @@ int main()
     Shader objectShader("src/modelLoad.vs", "src/modelLoad.fs");
     Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
     Shader floorShader("src/floorVs.vs", "src/floorFs.fs");
+    Shader grassShader("src/grassVs.vs", "src/grassFs.fs");
     mydata->addNewMateial("objectShader", &objectShader);
     mydata->addNewMateial("lightShader", &lightShader);
     mydata->addNewMateial("floorShader", &floorShader);
+    mydata->addNewMateial("grassShader", &grassShader);
+
+    unsigned int floorTexture = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//texture//diffuse.jpg"); 
+    unsigned int grassTexture = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//texture//transparent_window.png");
+
 
     pointlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
     mydata->allModels[pointlight->ID] = pointlight;
     dirlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//sphere//sphere.obj");
     mydata->allModels[dirlight->ID] = dirlight;
-
     backpack = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
     mydata->allModels[backpack->ID] = backpack;
     person = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//nanosuit//nanosuit.obj");
@@ -147,14 +185,23 @@ int main()
         // input
         // -----
         processInput(window);
+        
 
         // 清空缓存
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+
+        // ---------------------
+        //先绘制所有不透明的物体
+        // ---------------------
+
+        //floor
         {
+            glActiveTexture(GL_TEXTURE0); 
+            glBindTexture(GL_TEXTURE_2D, floorTexture);
             mydata->materials["floorShader"]->use();
-            mydata->materials["floorShader"]->setInt("texture_diffuse1", 1);
+            mydata->materials["floorShader"]->setInt("texture_diffuse1", 0);
 
             //矩阵们
             glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
@@ -169,10 +216,9 @@ int main()
             model = glm::scale(model, glm::vec3(1.0f));
             mydata->materials["floorShader"]->setMat4("model", model);
             glBindVertexArray(planeVAO);
-            glBindTexture(GL_TEXTURE_2D, floorTexture);
             glDrawArrays(GL_TRIANGLES, 0, 6);
-            glBindVertexArray(0);
         }
+        
         {
         //    mydata->materials["objectShader"]->use();
         //    mydata->materials["objectShader"]->setInt("texture_diffuse1", 0);
@@ -242,6 +288,52 @@ int main()
 
         scene(mydata);
         mydata->showNewModels();
+
+
+        // ---------------------
+        //对所有透明的物体排序
+        // ---------------------
+        std::map<float, glm::vec3> sorted;
+        for (unsigned int i = 0; i < windows.size(); i++)
+        {
+            float distance = glm::length(mydata->camera->Position - windows[i]);
+            sorted[distance] = windows[i];
+        }
+        
+
+        // ---------------------
+        //按顺序绘制所有透明的物体
+        // ---------------------
+        //grass
+        {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, grassTexture);
+            glBindVertexArray(grassVAO);
+            mydata->materials["grassShader"]->use();
+            mydata->materials["grassShader"]->setInt("texture_diffuse1", 0);
+
+            //矩阵们
+            glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+            glm::mat4 view = mydata->camera->GetViewMatrix();
+            mydata->materials["grassShader"]->setMat4("projection", projection);
+            mydata->materials["grassShader"]->setMat4("view", view);
+
+            glm::mat4 model = glm::mat4(1.0f);
+            /*model = glm::translate(model, glm::vec3(3.0f, -2.0f, 0));
+            model = glm::scale(model, glm::vec3(1.0f));
+            mydata->materials["grassShader"]->setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);*/
+
+            for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+            {
+                model = glm::mat4(1.0f);
+                model = glm::translate(model, it->second);
+                model = glm::scale(model, glm::vec3(1.0f));
+                mydata->materials["grassShader"]->setMat4("model", model);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+            }
+        }
+
         //渲染ui
         myUI->showEditorUI();
 
@@ -424,8 +516,8 @@ unsigned int loadTexture(char const* path)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

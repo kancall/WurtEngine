@@ -142,6 +142,9 @@ void EditorUI::buildFileTree(const fs::path& path)
                     //更新ui
                     //详情框显示模型的位置信息
                     std::cout << "init obj" << std::endl; //创建该模型
+
+                    //floor的纹理值，后续可优化
+                    data->floorTemp++;
                 }
             }
             else

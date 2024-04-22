@@ -49,6 +49,7 @@ public:
 		unsigned int diffuseNr = 1;
 		unsigned int specularNr = 1;
 
+		//每个模型在绘制的时候，都会把纹理默认从GL_TEXTURE0开始存储，如果需要额外存其他纹理，记得在每次的循环里面给缓冲区赋值
 		for (unsigned int i = 0; i < textures.size(); i++)
 		{
 			glActiveTexture(GL_TEXTURE0 + i); //激活纹理

@@ -18,6 +18,9 @@
 class EditorData
 {
 public:
+	//这个是记录floor用的纹理是哪个，因为加入新的纹理后，之前的纹理会后移，所以暂时弄个temp值记录一下
+	int floorTemp;
+
 	Camera* camera;
 	//light
 	int dirLightCount; //平行光源的数量
@@ -34,6 +37,8 @@ public:
 	std::unordered_map<std::string, Shader*> materials;
 	EditorData() 
 	{
+		floorTemp = 0;
+
 		materials["default"] = new Shader("src/default.vs", "src/default.fs");
 		
 		camera = new Camera(glm::vec3(0.0, 0.0, 6.0));
