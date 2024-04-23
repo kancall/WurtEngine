@@ -24,6 +24,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 void scene(EditorData* mydata);
 unsigned int loadTexture(char const* path);
+unsigned int loadCubeTexture(std::vector<std::string>& textures_faces);
 
 //datas
 EditorData* mydata;
@@ -147,23 +148,88 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
+    float skyboxVertices[] = {
+        // positions          
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+    };
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+
     //在这里创建EditorUI类对象，然后使用
     mydata = new EditorData;
     myUI = new EditorUI(window, mydata);
 
 
-    Shader objectShader("src/modelLoad.vs", "src/modelLoad.fs");
-    Shader lightShader("src/myrenderVs.vs", "src/lightRenderFs.fs");
-    Shader floorShader("src/floorVs.vs", "src/floorFs.fs");
-    Shader grassShader("src/grassVs.vs", "src/grassFs.fs");
+    Shader objectShader("modelLoad.vs", "modelLoad.fs");
+    Shader lightShader("myrenderVs.vs", "lightRenderFs.fs");
+    Shader floorShader("floorVs.vs", "floorFs.fs");
+    Shader grassShader("grassVs.vs", "grassFs.fs");
+    Shader cubemapShader("cubemapVs.vs", "cubemapFs.fs");
     mydata->addNewMateial("objectShader", &objectShader);
     mydata->addNewMateial("lightShader", &lightShader);
     mydata->addNewMateial("floorShader", &floorShader);
     mydata->addNewMateial("grassShader", &grassShader);
+    mydata->addNewMateial("cubemapShader", &cubemapShader);
 
     unsigned int floorTexture = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//texture//diffuse.jpg"); 
     unsigned int grassTexture = loadTexture("E://vs c++ practice//WurtEngine//WurtEngine//res//texture//transparent_window.png");
-
+    std::vector<std::string> faces
+    {
+        "E://vs c++ practice//WurtEngine//WurtEngine//res//skybox//sea//right.jpg",
+        "E://vs c++ practice//WurtEngine//WurtEngine//res//skybox//sea//left.jpg",
+        "E://vs c++ practice//WurtEngine//WurtEngine//res//skybox//sea//bottom.jpg",
+        "E://vs c++ practice//WurtEngine//WurtEngine//res//skybox//sea//top.jpg",
+        "E://vs c++ practice//WurtEngine//WurtEngine//res//skybox//sea//front.jpg",
+        "E://vs c++ practice//WurtEngine//WurtEngine//res//skybox//sea//back.jpg"
+    };
+    unsigned int cubemapTexture = loadCubeTexture(faces);
 
     pointlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
     mydata->allModels[pointlight->ID] = pointlight;
@@ -196,6 +262,25 @@ int main()
         //先绘制所有不透明的物体
         // ---------------------
 
+
+        //天空盒
+        {
+            glDepthFunc(GL_LEQUAL);
+            mydata->materials["cubemapShader"]->use();
+            mydata->materials["cubemapShader"]->setInt("skybox", 0);
+            //矩阵们
+            glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+            glm::mat4 view = glm::mat4(glm::mat3(mydata->camera->GetViewMatrix()));
+            mydata->materials["cubemapShader"]->setMat4("projection", projection);
+            mydata->materials["cubemapShader"]->setMat4("view", view);
+
+            glBindVertexArray(skyboxVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(0);
+            glDepthFunc(GL_LESS);
+        }
         //floor
         {
             glActiveTexture(GL_TEXTURE0); 
@@ -333,7 +418,6 @@ int main()
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
         }
-
         //渲染ui
         myUI->showEditorUI();
 
@@ -528,6 +612,36 @@ unsigned int loadTexture(char const* path)
         std::cout << "Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
     }
+
+    return textureID;
+}
+
+unsigned int loadCubeTexture(std::vector<std::string>&textures_faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < textures_faces.size(); i++)
+    {
+        unsigned char* data = stbi_load(textures_faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << textures_faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     return textureID;
 }

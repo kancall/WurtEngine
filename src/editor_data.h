@@ -39,7 +39,7 @@ public:
 	{
 		floorTemp = 0;
 
-		materials["default"] = new Shader("src/default.vs", "src/default.fs");
+		materials["default"] = new Shader("default.vs", "default.fs");
 		
 		camera = new Camera(glm::vec3(0.0, 0.0, 6.0));
 		
