@@ -98,13 +98,13 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float planeVertices[] = {
-         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+         30.0f, -0.5f,  20.0f,  4.0f, 0.0f,
+        -30.0f, -0.5f,  20.0f,  0.0f, 0.0f,
+        -30.0f, -0.5f, -20.0f,  0.0f, 4.0f,
 
-         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-         5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+         30.0f, -0.5f,  20.0f,  4.0f, 0.0f,
+        -30.0f, -0.5f, -20.0f,  0.0f, 4.0f,
+         30.0f, -0.5f, -20.0f,  4.0f, 4.0f
     };
     unsigned int planeVAO, planeVBO;
     glGenVertexArrays(1, &planeVAO);
@@ -238,6 +238,7 @@ int main()
     backpack = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
     mydata->allModels[backpack->ID] = backpack;
     person = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//nanosuit//nanosuit.obj");
+    person->scale = glm::vec3(0.2f);
     mydata->allModels[person->ID] = person;
 
     // render loop
@@ -263,24 +264,6 @@ int main()
         // ---------------------
 
 
-        //天空盒
-        {
-            glDepthFunc(GL_LEQUAL);
-            mydata->materials["cubemapShader"]->use();
-            mydata->materials["cubemapShader"]->setInt("skybox", 0);
-            //矩阵们
-            glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
-            glm::mat4 view = glm::mat4(glm::mat3(mydata->camera->GetViewMatrix()));
-            mydata->materials["cubemapShader"]->setMat4("projection", projection);
-            mydata->materials["cubemapShader"]->setMat4("view", view);
-
-            glBindVertexArray(skyboxVAO);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            glBindVertexArray(0);
-            glDepthFunc(GL_LESS);
-        }
         //floor
         {
             glActiveTexture(GL_TEXTURE0); 
@@ -294,11 +277,35 @@ int main()
             mydata->materials["floorShader"]->setMat4("projection", projection);
             mydata->materials["floorShader"]->setMat4("view", view);
             glm::mat4 model = glm::mat4(1.0f);
+            //下
             model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0));
             /*model = glm::rotate(model, glm::radians(myModel->rotation.x), glm::vec3(1.0, 0.0, 0.0));
             model = glm::rotate(model, glm::radians(myModel->rotation.y), glm::vec3(0.0, 1.0, 0.0));
             model = glm::rotate(model, glm::radians(myModel->rotation.z), glm::vec3(0.0, 0.0, 1.0));*/
             model = glm::scale(model, glm::vec3(1.0f));
+            mydata->materials["floorShader"]->setMat4("model", model);
+            glBindVertexArray(planeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            //前
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(0, 17.0f, -19));
+            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+            mydata->materials["floorShader"]->setMat4("model", model);
+            glBindVertexArray(planeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            //右
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(30, 17.0f, -10));
+            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+            mydata->materials["floorShader"]->setMat4("model", model);
+            glBindVertexArray(planeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            //左
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(-30, 17.0f, -10));
+            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+            model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0));
             mydata->materials["floorShader"]->setMat4("model", model);
             glBindVertexArray(planeVAO);
             glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -417,6 +424,25 @@ int main()
                 mydata->materials["grassShader"]->setMat4("model", model);
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
+        }
+
+        //天空盒
+        {
+            glDepthFunc(GL_LEQUAL);
+            mydata->materials["cubemapShader"]->use();
+            mydata->materials["cubemapShader"]->setInt("skybox", 0);
+            //矩阵们
+            glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+            glm::mat4 view = glm::mat4(glm::mat3(mydata->camera->GetViewMatrix()));
+            mydata->materials["cubemapShader"]->setMat4("projection", projection);
+            mydata->materials["cubemapShader"]->setMat4("view", view);
+
+            glBindVertexArray(skyboxVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(0);
+            glDepthFunc(GL_LESS);
         }
         //渲染ui
         myUI->showEditorUI();
@@ -600,8 +626,10 @@ unsigned int loadTexture(char const* path)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

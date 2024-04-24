@@ -26,6 +26,7 @@ public:
 
 	glm::vec3 position;
 	glm::vec3 rotation;
+	//遇到了一个bug，就是当改变模型的scale的时候，如果把模型变小，但是在使用射线检测的时候，实际上判断的位置还是原来没变小的模型，待修改
 	glm::vec3 scale;
 	//模型数据
 	std::vector<Texture> textures_loaded;
@@ -146,9 +147,9 @@ private:
 			if (textures.size() <= 0)
 			{
 				Texture texture;
-				texture.id = TextureFromFile("/diffuse.jpg", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
+				texture.id = TextureFromFile("/white.png", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
 				texture.type = "texture_diffuse";
-				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//diffuse.jpg";
+				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//white.png";
 				textures.push_back(texture);
 			}
 		}
