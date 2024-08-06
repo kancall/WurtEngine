@@ -16,6 +16,14 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
+
+//骨骼数据
+struct BoneInfo
+{
+	int id; //骨骼id
+	glm::mat4 offset; //模型空间中，骨骼相对于模型中心的偏移矩阵
+};
 
 class Model
 {
@@ -63,6 +71,9 @@ public:
 		return false;
 	}
 private:
+	std::map<std::string, BoneInfo> m_BoneInfoMap; //<骨骼名称，骨骼信息>
+	int m_BoneCounter = 0; //骨骼数量的计数器
+
 	void loadModel(std::string const& path) //path:模型的路径
 	{
 		//加载模型
@@ -92,6 +103,28 @@ private:
 			processNode(node->mChildren[i], scene);
 		}
 	}
+	//给骨骼相关的值进行初始化
+	void setVertexBoneDataToDefault(Vertex& vertex)
+	{
+		for (int i = 0; i < MAX_BONE_INFLUENCE; i++)
+		{
+			vertex.m_BoneIDs[i] = -1;
+			vertex.m_weights[i] = 0.0f;
+		}
+	}
+	//填充顶点的骨骼相关信息
+	void setBertexBoneData(Vertex& vertex, int boneID, float weight)
+	{
+		for (int i = 0; i < MAX_BONE_INFLUENCE; i++)
+		{
+			if (vertex.m_BoneIDs[i] < 0)
+			{
+				vertex.m_weights[i] = weight;
+				vertex.m_BoneIDs[i] = boneID;
+				break;
+			}
+		}
+	}
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		std::vector<Vertex> vertices;
@@ -102,6 +135,7 @@ private:
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 		{
 			Vertex vertex;
+			setVertexBoneDataToDefault(vertex); //对与这个顶点相关的骨骼们进行初始化
 			glm::vec3 vector;
 
 			vector.x = mesh->mVertices[i].x;
@@ -147,14 +181,58 @@ private:
 			if (textures.size() <= 0)
 			{
 				Texture texture;
-				texture.id = TextureFromFile("/white.png", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
+				texture.id = TextureFromFile("/floor.jpg", "E://vs c++ practice//WurtEngine//WurtEngine//res//texture/");
 				texture.type = "texture_diffuse";
-				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//white.png";
+				texture.path = "E://vs c++ practice//WurtEngine//WurtEngine//res//texture//floor.jpg";
 				textures.push_back(texture);
 			}
 		}
+		//获取骨骼实际的权重
+		ExtractBoneWeightForVertices(vertices, mesh, scene);
 
-		return Mesh(vertices, indices, textures);
+		//如果模型的scale更改了，那么每个片元的点也应该跟着一起改，在这里记录一下，后续修改
+		return Mesh(vertices, indices, textures); 
+	}
+	//获得骨骼实际的权重数据
+	//aiBone是存储在aiMesh中的，所以要在mesh中去获取详细的骨骼信息，具体的关系可以看learnOpengl上的关系图
+	void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene)
+	{
+		for (int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
+		{
+			int boneID = -1;
+			std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
+			if (m_BoneInfoMap.find(boneName) == m_BoneInfoMap.end()) //骨骼没存过
+			{
+				BoneInfo nowBoneInfo;
+
+				nowBoneInfo.id = m_BoneCounter;
+				aiMatrix4x4 from = mesh->mBones[boneIndex]->mOffsetMatrix; //提取骨骼的偏移矩阵
+				glm::mat4 to;
+				to[0][0] = from.a1; to[1][0] = from.a2; to[2][0] = from.a3; to[3][0] = from.a4;
+				to[0][1] = from.b1; to[1][1] = from.b2; to[2][1] = from.b3; to[3][1] = from.b4;
+				to[0][2] = from.c1; to[1][2] = from.c2; to[2][2] = from.c3; to[3][2] = from.c4;
+				to[0][3] = from.d1; to[1][3] = from.d2; to[2][3] = from.d3; to[3][3] = from.d4;
+				nowBoneInfo.offset = to;
+
+				m_BoneInfoMap[boneName] = nowBoneInfo;
+				boneID = m_BoneCounter;
+				m_BoneCounter++;
+			}
+			else
+			{
+				boneID = m_BoneInfoMap[boneName].id;
+			}
+			assert(boneID != -1);
+
+			auto weights = mesh->mBones[boneIndex]->mWeights;//当前骨骼对应的权重值
+			for (int weightIndex = 0; weightIndex < mesh->mBones[boneIndex]->mNumWeights; weightIndex++)
+			{
+				int vertexId = weights[weightIndex].mVertexId;
+				float weight = weights[weightIndex].mWeight;
+				assert(vertexId <= vertices.size());
+				setBertexBoneData(vertices[vertexId], boneID, weight);
+			}
+		}
 	}
 	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
 	{

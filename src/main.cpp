@@ -35,6 +35,8 @@ Model* backpack;
 Model* pointlight;
 Model* dirlight;
 Model* person;
+Model* zhongli;
+Model* floorModel;
 
 // settings
 const unsigned int SCR_WIDTH = 1000;
@@ -237,10 +239,13 @@ int main()
     mydata->allModels[dirlight->ID] = dirlight;
     backpack = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//backpack//backpack.obj");
     mydata->allModels[backpack->ID] = backpack;
-    person = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//nanosuit//nanosuit.obj");
-    person->scale = glm::vec3(0.2f);
+    person = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//person.fbx");
+    person->scale = glm::vec3(0.05f);
     mydata->allModels[person->ID] = person;
-
+    floorModel = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//floor//floor.obj");
+    floorModel->position = glm::vec3(0.0, -5.0, 0.0);
+    floorModel->rotation = glm::vec3(90.0f, 0.0, 0.0);
+    mydata->allModels[floorModel->ID] = floorModel;
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -466,11 +471,14 @@ void scene(EditorData* mydata)
 
     mydata->materials["objectShader"]->use();
 
-    mydata->phongShaderData(mydata->materials["objectShader"], backpack);
-    backpack->Draw(mydata->materials["objectShader"]);
+    /*mydata->phongShaderData(mydata->materials["objectShader"], backpack);
+    backpack->Draw(mydata->materials["objectShader"]);*/
 
     mydata->phongShaderData(mydata->materials["objectShader"], person);
     person->Draw(mydata->materials["objectShader"]);
+
+    mydata->phongShaderData(mydata->materials["objectShader"], floorModel);
+    floorModel->Draw(mydata->materials["objectShader"]);
 
     //objectShader->setInt("pointLightCount", mydata->pointLightCount);
     //for (int i = 0; i < mydata->pointLightCount; i++)

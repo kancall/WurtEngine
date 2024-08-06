@@ -11,12 +11,18 @@
 #include <string>
 #include <vector>
 
-//存储向量
+#define MAX_BONE_INFLUENCE 4
+
+//存储每个网格的顶点数据
 struct Vertex
 {
 	glm::vec3 Position;
 	glm::vec3 Normal;
 	glm::vec2 TexCoords;
+
+	//骨骼动画相关
+	int m_BoneIDs[MAX_BONE_INFLUENCE]; //会影响当前节点的骨骼的对应id
+	float m_weights[MAX_BONE_INFLUENCE]; //这些骨骼对应的权重值
 };
 //存储贴图
 struct Texture
@@ -127,6 +133,12 @@ private:
 		glEnableVertexAttribArray(1); //启用顶点属性
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));//纹理
 		glEnableVertexAttribArray(2); //启用顶点属性
+
+		//骨骼动画相关属性
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs)); //骨骼id
+		glEnableVertexAttribArray(4);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_weights)); //骨骼权重
 
 		glBindVertexArray(0);
 	}

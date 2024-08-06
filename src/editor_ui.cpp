@@ -161,7 +161,7 @@ bool EditorUI::isObjFile(const std::string& file)
     int dotPos = file.rfind('.'); //寻找最后一个.的位置
     if (dotPos != std::string::npos && dotPos != 0)
     {
-        if (file.substr(dotPos + 1) == "obj")
+        if (file.substr(dotPos + 1) == "obj" || file.substr(dotPos + 1) == "fbx")
             return true;
     }
     return false;

@@ -41,7 +41,7 @@ public:
 
 		materials["default"] = new Shader("default.vs", "default.fs");
 		
-		camera = new Camera(glm::vec3(0.0, 0.0, 10.0));
+		camera = new Camera(glm::vec3(0.0, 0.0, 15.0));
 		
 		specuMi = 64;
 		//light
