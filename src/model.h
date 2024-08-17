@@ -40,11 +40,11 @@ public:
 	std::vector<Texture> textures_loaded;
 	std::vector<Mesh> meshes;
 	std::string directory;
-	Model(std::string const& path)
+	Model(std::string const& path, glm::vec3 position = glm::vec3(0.0f))
 	{
 		ID = cnt++;
 		name = path; //测试用，后续更改
-		position = glm::vec3(0.0f);
+		this->position = position;
 		rotation = glm::vec3(0.0f);
 		scale = glm::vec3(1.0f);
 

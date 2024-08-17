@@ -42,18 +42,18 @@ Model* floorModel;
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 600;
 
-//camera
+// camera
 float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2; //鼠标上一次所在的位置
 bool firstMouse = true; //重新开始一次摄像机的视角移动
 
 float deltaTime = 0.0f; //每帧间隔时间
 float lastFrame = 0.0f; //上一帧的时间
 
-//light
+// light
 int pointLightCount = 1;
 std::vector<PointLight> pointLights;
 
-//phong
+// phong
 int specuMi = 64;
 
 int main()
@@ -83,8 +83,8 @@ int main()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //GLFW_CURSOR_DISABLED是不显示鼠标
-    //加载glad库
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // GLFW_CURSOR_DISABLED是不显示鼠标
+    // 加载glad库
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -95,7 +95,7 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_STENCIL_TEST);
-    //启用混合，并设置混合函数
+    // 启用混合，并设置混合函数
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -208,7 +208,7 @@ int main()
     mydata = new EditorData;
     myUI = new EditorUI(window, mydata);
 
-
+    // shaders
     Shader objectShader("modelLoad.vs", "modelLoad.fs");
     Shader lightShader("myrenderVs.vs", "lightRenderFs.fs");
     Shader floorShader("floorVs.vs", "floorFs.fs");
@@ -233,7 +233,7 @@ int main()
     };
     unsigned int cubemapTexture = loadCubeTexture(faces);
 
-    pointlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj");
+    pointlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//cube//cube.obj", glm::vec3(1.0f, 0.0f, 0.0));
     mydata->allModels[pointlight->ID] = pointlight;
     dirlight = new Model("E://vs c++ practice//WurtEngine//WurtEngine//res//model//sphere//sphere.obj");
     mydata->allModels[dirlight->ID] = dirlight;
@@ -268,54 +268,54 @@ int main()
         //先绘制所有不透明的物体
         // ---------------------
 
-
-        //floor
+        //floor   场景相关内容，先注释掉，暂时不用了
         {
-            glActiveTexture(GL_TEXTURE0); 
-            glBindTexture(GL_TEXTURE_2D, floorTexture);
-            mydata->materials["floorShader"]->use();
-            mydata->materials["floorShader"]->setInt("texture_diffuse1", 0);
-
-            //矩阵们
-            glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
-            glm::mat4 view = mydata->camera->GetViewMatrix();
-            mydata->materials["floorShader"]->setMat4("projection", projection);
-            mydata->materials["floorShader"]->setMat4("view", view);
-            glm::mat4 model = glm::mat4(1.0f);
-            //下
-            model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0));
-            /*model = glm::rotate(model, glm::radians(myModel->rotation.x), glm::vec3(1.0, 0.0, 0.0));
-            model = glm::rotate(model, glm::radians(myModel->rotation.y), glm::vec3(0.0, 1.0, 0.0));
-            model = glm::rotate(model, glm::radians(myModel->rotation.z), glm::vec3(0.0, 0.0, 1.0));*/
-            model = glm::scale(model, glm::vec3(1.0f));
-            mydata->materials["floorShader"]->setMat4("model", model);
-            glBindVertexArray(planeVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            //前
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(0, 17.0f, -19));
-            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
-            mydata->materials["floorShader"]->setMat4("model", model);
-            glBindVertexArray(planeVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            //右
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(30, 17.0f, -10));
-            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
-            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-            mydata->materials["floorShader"]->setMat4("model", model);
-            glBindVertexArray(planeVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            //左
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(-30, 17.0f, -10));
-            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
-            model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0));
-            mydata->materials["floorShader"]->setMat4("model", model);
-            glBindVertexArray(planeVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            //glActiveTexture(GL_TEXTURE0); 
+            //glBindTexture(GL_TEXTURE_2D, floorTexture);
+            //mydata->materials["floorShader"]->use();
+            //mydata->materials["floorShader"]->setInt("texture_diffuse1", 0);
+            ////矩阵们
+         
+            //glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+            //glm::mat4 view = mydata->camera->GetViewMatrix();
+            //mydata->materials["floorShader"]->setMat4("projection", projection);
+            //mydata->materials["floorShader"]->setMat4("view", view);
+            //glm::mat4 model = glm::mat4(1.0f);
+            ////下
+            //model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0));
+            ///*model = glm::rotate(model, glm::radians(myModel->rotation.x), glm::vec3(1.0, 0.0, 0.0));
+            //model = glm::rotate(model, glm::radians(myModel->rotation.y), glm::vec3(0.0, 1.0, 0.0));
+            //model = glm::rotate(model, glm::radians(myModel->rotation.z), glm::vec3(0.0, 0.0, 1.0));*/
+            //model = glm::scale(model, glm::vec3(1.0f));
+            //mydata->materials["floorShader"]->setMat4("model", model);
+            //glBindVertexArray(planeVAO);
+            //glDrawArrays(GL_TRIANGLES, 0, 6);
+            ////前
+            //model = glm::mat4(1.0f);
+            //model = glm::translate(model, glm::vec3(0, 17.0f, -19));
+            //model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+            //mydata->materials["floorShader"]->setMat4("model", model);
+            //glBindVertexArray(planeVAO);
+            //glDrawArrays(GL_TRIANGLES, 0, 6);
+            ////右
+            //model = glm::mat4(1.0f);
+            //model = glm::translate(model, glm::vec3(30, 17.0f, -10));
+            //model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+            //model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+            //mydata->materials["floorShader"]->setMat4("model", model);
+            //glBindVertexArray(planeVAO);
+            //glDrawArrays(GL_TRIANGLES, 0, 6);
+            ////左
+            //model = glm::mat4(1.0f);
+            //model = glm::translate(model, glm::vec3(-30, 17.0f, -10));
+            //model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+            //model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0));
+            //mydata->materials["floorShader"]->setMat4("model", model);
+            //glBindVertexArray(planeVAO);
+            //glDrawArrays(GL_TRIANGLES, 0, 6);
         }
         
+        // phong着色模型，已经封装成了方法，后续可以考虑删除这段代码
         {
         //    mydata->materials["objectShader"]->use();
         //    mydata->materials["objectShader"]->setInt("texture_diffuse1", 0);
@@ -359,6 +359,7 @@ int main()
         //    glBindVertexArray(0);
         }
 
+        // lights
         glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = mydata->camera->GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
@@ -403,32 +404,32 @@ int main()
         // ---------------------
         //grass
         {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, grassTexture);
-            glBindVertexArray(grassVAO);
-            mydata->materials["grassShader"]->use();
-            mydata->materials["grassShader"]->setInt("texture_diffuse1", 0);
+            //glActiveTexture(GL_TEXTURE0);
+            //glBindTexture(GL_TEXTURE_2D, grassTexture);
+            //glBindVertexArray(grassVAO);
+            //mydata->materials["grassShader"]->use();
+            //mydata->materials["grassShader"]->setInt("texture_diffuse1", 0);
 
-            //矩阵们
-            glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
-            glm::mat4 view = mydata->camera->GetViewMatrix();
-            mydata->materials["grassShader"]->setMat4("projection", projection);
-            mydata->materials["grassShader"]->setMat4("view", view);
+            ////矩阵们
+            //glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)1000 / (float)600, 0.1f, 100.0f); //！注意，这里的width以后需要改成变量
+            //glm::mat4 view = mydata->camera->GetViewMatrix();
+            //mydata->materials["grassShader"]->setMat4("projection", projection);
+            //mydata->materials["grassShader"]->setMat4("view", view);
 
-            glm::mat4 model = glm::mat4(1.0f);
-            /*model = glm::translate(model, glm::vec3(3.0f, -2.0f, 0));
-            model = glm::scale(model, glm::vec3(1.0f));
-            mydata->materials["grassShader"]->setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 6);*/
+            //glm::mat4 model = glm::mat4(1.0f);
+            ///*model = glm::translate(model, glm::vec3(3.0f, -2.0f, 0));
+            //model = glm::scale(model, glm::vec3(1.0f));
+            //mydata->materials["grassShader"]->setMat4("model", model);
+            //glDrawArrays(GL_TRIANGLES, 0, 6);*/
 
-            for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
-            {
-                model = glm::mat4(1.0f);
-                model = glm::translate(model, it->second);
-                model = glm::scale(model, glm::vec3(1.0f));
-                mydata->materials["grassShader"]->setMat4("model", model);
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-            }
+            //for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+            //{
+            //    model = glm::mat4(1.0f);
+            //    model = glm::translate(model, it->second);
+            //    model = glm::scale(model, glm::vec3(1.0f));
+            //    mydata->materials["grassShader"]->setMat4("model", model);
+            //    glDrawArrays(GL_TRIANGLES, 0, 6);
+            //}
         }
 
         //天空盒
@@ -474,64 +475,67 @@ void scene(EditorData* mydata)
     /*mydata->phongShaderData(mydata->materials["objectShader"], backpack);
     backpack->Draw(mydata->materials["objectShader"]);*/
 
-    mydata->phongShaderData(mydata->materials["objectShader"], person);
-    person->Draw(mydata->materials["objectShader"]);
+    /*mydata->phongShaderData(mydata->materials["objectShader"], person);
+    person->Draw(mydata->materials["objectShader"]);*/
 
     mydata->phongShaderData(mydata->materials["objectShader"], floorModel);
     floorModel->Draw(mydata->materials["objectShader"]);
 
-    //objectShader->setInt("pointLightCount", mydata->pointLightCount);
-    //for (int i = 0; i < mydata->pointLightCount; i++)
-    //{
-    //    std::string index = "pointLights[" + std::to_string(i) + "]";
+    // 场景相关模型，暂时不用先注释掉
+    {
+        //objectShader->setInt("pointLightCount", mydata->pointLightCount);
+        //for (int i = 0; i < mydata->pointLightCount; i++)
+        //{
+        //    std::string index = "pointLights[" + std::to_string(i) + "]";
 
-    //    objectShader->setVec3(index + ".position", mydata->pointLights[0].position);
-    //    objectShader->setFloat(index + ".constant", 1.0f);
-    //    objectShader->setFloat(index + ".linear", 0.09f);
-    //    objectShader->setFloat(index + ".quadratic", 0.032f);
-    //    objectShader->setVec3(index + ".ambient", mydata->pointLights[0].ambient);
-    //    objectShader->setVec3(index + ".diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
-    //    objectShader->setVec3(index + ".specular", glm::vec3(1.0f, 1.0f, 1.0f));
-    //}
-    ////矩阵们
-    //glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    //glm::mat4 view = mydata->camera->GetViewMatrix();
-    //objectShader->setMat4("projection", projection);
-    //objectShader->setMat4("view", view);
-    //glm::mat4 model = glm::mat4(1.0f);
-    //model = glm::translate(model, backpack->position);
-    //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    //objectShader->setMat4("model", model);
-    //背包模型draw
-    //backpack->Draw(objectShader);
+        //    objectShader->setVec3(index + ".position", mydata->pointLights[0].position);
+        //    objectShader->setFloat(index + ".constant", 1.0f);
+        //    objectShader->setFloat(index + ".linear", 0.09f);
+        //    objectShader->setFloat(index + ".quadratic", 0.032f);
+        //    objectShader->setVec3(index + ".ambient", mydata->pointLights[0].ambient);
+        //    objectShader->setVec3(index + ".diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+        //    objectShader->setVec3(index + ".specular", glm::vec3(1.0f, 1.0f, 1.0f));
+        //}
+        ////矩阵们
+        //glm::mat4 projection = glm::perspective(glm::radians(mydata->camera->Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        //glm::mat4 view = mydata->camera->GetViewMatrix();
+        //objectShader->setMat4("projection", projection);
+        //objectShader->setMat4("view", view);
+        //glm::mat4 model = glm::mat4(1.0f);
+        //model = glm::translate(model, backpack->position);
+        //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        //objectShader->setMat4("model", model);
+        //背包模型draw
+        //backpack->Draw(objectShader);
 
-    /*model = glm::mat4(1.0f);
-    model = glm::translate(model, floorModel->position);
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    objectShader->setMat4("model", model);
-    floorModel->Draw(objectShader);*/
+        /*model = glm::mat4(1.0f);
+        model = glm::translate(model, floorModel->position);
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        objectShader->setMat4("model", model);
+        floorModel->Draw(objectShader);*/
 
-    //Shader* lightShader= mydata->materials["lightShader"];
-    //lightShader->use();
-    //lightShader->setMat4("proj", projection);
-    //lightShader->setMat4("view", view);
-    //for (int i = 0; i < mydata->pointLightCount; i++)
-    //{
-    //    lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
+        //Shader* lightShader= mydata->materials["lightShader"];
+        //lightShader->use();
+        //lightShader->setMat4("proj", projection);
+        //lightShader->setMat4("view", view);
+        //for (int i = 0; i < mydata->pointLightCount; i++)
+        //{
+        //    lightShader->setVec3("lightColor", mydata->pointLights[i].ambient);
 
-    //    model = glm::mat4(1.0f);
-    //    model = glm::translate(model, mydata->pointLights[i].position);
-    //    model = glm::scale(model, glm::vec3(0.2f));
-    //    lightShader->setMat4("model", model);
-    //    //方块模型draw
-    //}
-    //lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
+        //    model = glm::mat4(1.0f);
+        //    model = glm::translate(model, mydata->pointLights[i].position);
+        //    model = glm::scale(model, glm::vec3(0.2f));
+        //    lightShader->setMat4("model", model);
+        //    //方块模型draw
+        //}
+        //lightShader->setVec3("lightColor", mydata->dirLights[0].ambient);
 
-    //model = glm::mat4(1.0f);
-    //model = glm::translate(model, mydata->dirLights[0].position);
-    //model = glm::scale(model, glm::vec3(0.2f));
-    //lightShader->setMat4("model", model);
-    ////方块模型draw
+        //model = glm::mat4(1.0f);
+        //model = glm::translate(model, mydata->dirLights[0].position);
+        //model = glm::scale(model, glm::vec3(0.2f));
+        //lightShader->setMat4("model", model);
+        ////方块模型draw
+    }
 }
 
 void processInput(GLFWwindow* window)
